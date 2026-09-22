@@ -7,11 +7,12 @@ class ChartsConfiguratorScreen extends StatefulWidget {
   const ChartsConfiguratorScreen({super.key});
 
   @override
-  State<ChartsConfiguratorScreen> createState() => _ChartsConfiguratorScreenState();
+  State<ChartsConfiguratorScreen> createState() =>
+      _ChartsConfiguratorScreenState();
 }
 
 class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
-  String _selectedLimit = PokerConstants.limitNL50;
+  String _selectedLimit = PokerConstants.limitNL100;
   String _selectedPosition = PokerConstants.positionUTG;
   String _selectedChart = PokerConstants.chartOPR;
 
@@ -26,9 +27,9 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -63,15 +64,30 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSection('Type', [PokerConstants.type6max], PokerConstants.type6max, null),
+            _buildSection(
+              'Type',
+              [PokerConstants.type6max],
+              PokerConstants.type6max,
+              null,
+            ),
             _buildSection(
               'Limit',
-              [PokerConstants.limitNL50, PokerConstants.limitNL100, PokerConstants.limitNL200],
+              [PokerConstants.limitNL100, PokerConstants.limitNL200],
               _selectedLimit,
               (val) => setState(() => _selectedLimit = val),
             ),
-            _buildSection('Stacks', [PokerConstants.stacks100], PokerConstants.stacks100, null),
-            _buildSection('Raise', [PokerConstants.raise3bb], PokerConstants.raise3bb, null),
+            _buildSection(
+              'Stacks',
+              [PokerConstants.stacks100],
+              PokerConstants.stacks100,
+              null,
+            ),
+            _buildSection(
+              'Raise',
+              [PokerConstants.raise3bb],
+              PokerConstants.raise3bb,
+              null,
+            ),
             _buildSection(
               'Position',
               [
@@ -125,4 +141,3 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
     );
   }
 }
-

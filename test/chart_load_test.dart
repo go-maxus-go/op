@@ -1,11 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/chart_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:optimal_poker/theme.dart';
 
 void main() {
   testWidgets('Test loading specific chart', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      home: ChartScreen(
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        extensions: [AppTheme.lightChartColors],
+      ),
+      home: const ChartScreen(
         type: '6max',
         stacks: '100',
         limit: 'NL100',

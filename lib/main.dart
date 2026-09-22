@@ -30,10 +30,12 @@ class _PokerTrainingAppState extends State<PokerTrainingApp> {
       theme: ThemeData(
         colorScheme: AppTheme.lightColorScheme,
         useMaterial3: true,
+        extensions: [AppTheme.lightChartColors],
       ),
       darkTheme: ThemeData(
         colorScheme: AppTheme.darkColorScheme,
         useMaterial3: true,
+        extensions: [AppTheme.darkChartColors],
       ),
       themeMode: _themeMode,
       home: MainMenuScreen(
