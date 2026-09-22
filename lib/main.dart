@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'preflop_screen.dart';
 import 'theme.dart';
 
 void main() {
@@ -78,9 +79,11 @@ class MainMenuScreen extends StatelessWidget {
                   textStyle: const TextStyle(fontSize: 24),
                 ),
                 onPressed: () {
-                  // TODO: Navigate to Preflop training screen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Preflop training coming soon!')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PreflopScreen(),
+                    ),
                   );
                 },
                 child: const Text('Preflop'),
