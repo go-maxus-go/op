@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'charts_configurator_screen.dart';
+
 class PreflopScreen extends StatelessWidget {
   const PreflopScreen({super.key});
 
@@ -23,8 +25,11 @@ class PreflopScreen extends StatelessWidget {
                   textStyle: const TextStyle(fontSize: 24),
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Charts coming soon!')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChartsConfiguratorScreen(),
+                    ),
                   );
                 },
                 child: const Text('Charts'),
@@ -36,3 +41,4 @@ class PreflopScreen extends StatelessWidget {
     );
   }
 }
+
