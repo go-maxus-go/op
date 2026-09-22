@@ -1,35 +1,67 @@
 import 'package:flutter/material.dart';
 
+import 'theme.dart';
+
 void main() {
   runApp(const PokerTrainingApp());
 }
 
-class PokerTrainingApp extends StatelessWidget {
+class PokerTrainingApp extends StatefulWidget {
   const PokerTrainingApp({super.key});
+
+  @override
+  State<PokerTrainingApp> createState() => _PokerTrainingAppState();
+}
+
+class _PokerTrainingAppState extends State<PokerTrainingApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Poker Training',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green, // Poker green theme
-          brightness: Brightness.dark,
-        ),
+        colorScheme: AppTheme.lightColorScheme,
         useMaterial3: true,
       ),
-      home: const MainMenuScreen(),
+      darkTheme: ThemeData(
+        colorScheme: AppTheme.darkColorScheme,
+        useMaterial3: true,
+      ),
+      themeMode: _themeMode,
+      home: MainMenuScreen(
+        onToggleTheme: _toggleTheme,
+        isDarkMode: _themeMode == ThemeMode.dark,
+      ),
     );
   }
 }
 
 class MainMenuScreen extends StatelessWidget {
-  const MainMenuScreen({super.key});
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
+
+  const MainMenuScreen({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+          onPressed: onToggleTheme,
+          tooltip: 'Toggle Theme',
+        ),
         title: const Text('Poker Training'),
         centerTitle: true,
       ),
