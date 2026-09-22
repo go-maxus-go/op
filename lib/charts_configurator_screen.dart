@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'chart_screen.dart';
 import 'constants.dart';
 
 class ChartsConfiguratorScreen extends StatefulWidget {
@@ -102,11 +103,16 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                 textStyle: const TextStyle(fontSize: 20),
               ),
               onPressed: () {
-                // TODO: Navigate to the actual chart screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Showing $_selectedChart for $_selectedPosition at $_selectedLimit',
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChartScreen(
+                      type: PokerConstants.type6max,
+                      limit: _selectedLimit,
+                      stacks: PokerConstants.stacks100,
+                      raise: PokerConstants.raise3bb,
+                      position: _selectedPosition,
+                      chart: _selectedChart,
                     ),
                   ),
                 );
