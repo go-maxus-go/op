@@ -44,7 +44,8 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 
   Future<void> _loadChart() async {
-    final fileName = '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
+    final fileName =
+        '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
     try {
       final yamlString = await rootBundle.loadString('assets/charts/$fileName');
       final yamlDoc = loadYaml(yamlString);
@@ -196,23 +197,28 @@ class _ChartScreenState extends State<ChartScreen> {
         weights.forEach((action, weight) {
           if (!action.toLowerCase().contains('fold')) {
             nonFoldTotal += weight;
-            actionCombos[action] = (actionCombos[action] ?? 0) + (combos * weight / 100);
+            actionCombos[action] =
+                (actionCombos[action] ?? 0) + (combos * weight / 100);
           }
         });
 
         int foldWeight = weights.entries
             .where((e) => e.key.toLowerCase().contains('fold'))
             .fold(0, (sum, e) => sum + e.value);
-            
+
         // Fallback: if there's no explicitly defined fold but actions don't sum to 100
         if (foldWeight == 0 && nonFoldTotal < 100) {
           foldWeight = 100 - nonFoldTotal;
         }
 
         if (foldWeight > 0) {
-           // We might need to map it to a standard "Fold" label if it's implicitly calculated
-           String foldLabel = _uniqueActions.firstWhere((a) => a.toLowerCase().contains('fold'), orElse: () => 'Fold');
-           actionCombos[foldLabel] = (actionCombos[foldLabel] ?? 0) + (combos * foldWeight / 100);
+          // We might need to map it to a standard "Fold" label if it's implicitly calculated
+          String foldLabel = _uniqueActions.firstWhere(
+            (a) => a.toLowerCase().contains('fold'),
+            orElse: () => 'Fold',
+          );
+          actionCombos[foldLabel] =
+              (actionCombos[foldLabel] ?? 0) + (combos * foldWeight / 100);
         }
       }
     }
@@ -256,7 +262,10 @@ class _ChartScreenState extends State<ChartScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Text('$action (${freq.toStringAsFixed(1)}%)', style: const TextStyle(fontSize: 14)),
+            Text(
+              '$action (${freq.toStringAsFixed(1)}%)',
+              style: const TextStyle(fontSize: 14),
+            ),
           ],
         );
       }).toList(),
@@ -264,7 +273,9 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 
   Widget _buildPopupOverlay(ChartColors colors) {
-    if (_selectedHand == null || _selectedActionWeights == null || _selectedCellRect == null) {
+    if (_selectedHand == null ||
+        _selectedActionWeights == null ||
+        _selectedCellRect == null) {
       return const SizedBox.shrink();
     }
 
@@ -304,11 +315,17 @@ class _ChartScreenState extends State<ChartScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('$action: ', style: const TextStyle(fontWeight: FontWeight.w500)),
-              Text('$weight%', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                '$action: ',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              Text(
+                '$weight%',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
-        )
+        ),
       );
     }
 
@@ -319,7 +336,10 @@ class _ChartScreenState extends State<ChartScreen> {
     });
 
     if (foldWeight > 0) {
-      String foldLabel = _uniqueActions.firstWhere((a) => a.toLowerCase().contains('fold'), orElse: () => 'Fold');
+      String foldLabel = _uniqueActions.firstWhere(
+        (a) => a.toLowerCase().contains('fold'),
+        orElse: () => 'Fold',
+      );
       addActionRow(foldLabel, foldWeight);
     }
 
@@ -328,14 +348,22 @@ class _ChartScreenState extends State<ChartScreen> {
       child: Material(
         elevation: 8,
         borderRadius: BorderRadius.circular(8),
-        color: Theme.of(context).dialogTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
+        color:
+            Theme.of(context).dialogTheme.backgroundColor ??
+            Theme.of(context).colorScheme.surface,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Hand: $hand', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                'Hand: $hand',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
               const SizedBox(height: 8),
               ...actionRows,
             ],
@@ -387,7 +415,8 @@ class _ChartScreenState extends State<ChartScreen> {
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
                                   final gridSize =
-                                      constraints.maxWidth < constraints.maxHeight
+                                      constraints.maxWidth <
+                                          constraints.maxHeight
                                       ? constraints.maxWidth
                                       : constraints.maxHeight;
 
@@ -396,7 +425,8 @@ class _ChartScreenState extends State<ChartScreen> {
                                       width: gridSize,
                                       height: gridSize,
                                       child: GridView.builder(
-                                        physics: const NeverScrollableScrollPhysics(),
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
                                         gridDelegate:
                                             const SliverGridDelegateWithFixedCrossAxisCount(
                                               crossAxisCount: 13,
@@ -414,10 +444,14 @@ class _ChartScreenState extends State<ChartScreen> {
 
                                           int foldWeight = actionWeights.entries
                                               .where(
-                                                (e) =>
-                                                    e.key.toLowerCase().contains('fold'),
+                                                (e) => e.key
+                                                    .toLowerCase()
+                                                    .contains('fold'),
                                               )
-                                              .fold(0, (sum, e) => sum + e.value);
+                                              .fold(
+                                                0,
+                                                (sum, e) => sum + e.value,
+                                              );
 
                                           bool isMostlyFolded =
                                               (foldWeight >= 100) ||
@@ -427,26 +461,43 @@ class _ChartScreenState extends State<ChartScreen> {
                                             builder: (cellContext) {
                                               return GestureDetector(
                                                 onTap: () {
-                                                  final RenderBox overlay = scaffoldContext.findRenderObject() as RenderBox;
-                                                  final RenderBox box = cellContext.findRenderObject() as RenderBox;
-                                                  final position = box.localToGlobal(Offset.zero, ancestor: overlay);
-                                                  final cellRect = position & box.size;
+                                                  final RenderBox overlay =
+                                                      scaffoldContext
+                                                              .findRenderObject()
+                                                          as RenderBox;
+                                                  final RenderBox box =
+                                                      cellContext
+                                                              .findRenderObject()
+                                                          as RenderBox;
+                                                  final position = box
+                                                      .localToGlobal(
+                                                        Offset.zero,
+                                                        ancestor: overlay,
+                                                      );
+                                                  final cellRect =
+                                                      position & box.size;
                                                   setState(() {
                                                     if (_selectedHand == hand) {
                                                       _selectedHand = null;
-                                                      _selectedActionWeights = null;
+                                                      _selectedActionWeights =
+                                                          null;
                                                       _selectedCellRect = null;
                                                     } else {
                                                       _selectedHand = hand;
-                                                      _selectedActionWeights = actionWeights;
-                                                      _selectedCellRect = cellRect;
+                                                      _selectedActionWeights =
+                                                          actionWeights;
+                                                      _selectedCellRect =
+                                                          cellRect;
                                                     }
                                                   });
                                                 },
                                                 child: Container(
                                                   clipBehavior: Clip.antiAlias,
                                                   decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(2),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          2,
+                                                        ),
                                                   ),
                                                   child: Stack(
                                                     fit: StackFit.expand,
@@ -461,16 +512,28 @@ class _ChartScreenState extends State<ChartScreen> {
                                                           child: Text(
                                                             hand,
                                                             style: TextStyle(
-                                                              color: isMostlyFolded
-                                                                  ? Colors.grey.shade400
-                                                                  : Colors.white,
+                                                              color:
+                                                                  isMostlyFolded
+                                                                  ? Colors
+                                                                        .grey
+                                                                        .shade400
+                                                                  : Colors
+                                                                        .white,
                                                               fontSize: 10,
-                                                              fontWeight: FontWeight.bold,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                               shadows: const [
                                                                 Shadow(
-                                                                  blurRadius: 2.0,
-                                                                  color: Colors.black87,
-                                                                  offset: Offset(1.0, 1.0),
+                                                                  blurRadius:
+                                                                      2.0,
+                                                                  color: Colors
+                                                                      .black87,
+                                                                  offset:
+                                                                      Offset(
+                                                                        1.0,
+                                                                        1.0,
+                                                                      ),
                                                                 ),
                                                               ],
                                                             ),
@@ -481,7 +544,7 @@ class _ChartScreenState extends State<ChartScreen> {
                                                   ),
                                                 ),
                                               );
-                                            }
+                                            },
                                           );
                                         },
                                       ),
@@ -500,7 +563,7 @@ class _ChartScreenState extends State<ChartScreen> {
                     ],
                   ),
                 );
-              }
+              },
             ),
     );
   }
@@ -538,13 +601,15 @@ class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
     // Safety checks to prevent clipping
     if (dx < 0) dx = 0;
     if (dy < 0) dy = 0;
-    if (dy + childSize.height > screenSize.height) dy = screenSize.height - childSize.height;
+    if (dy + childSize.height > screenSize.height)
+      dy = screenSize.height - childSize.height;
 
     return Offset(dx, dy);
   }
 
   @override
   bool shouldRelayout(_PopupLayoutDelegate oldDelegate) {
-    return cellRect != oldDelegate.cellRect || screenSize != oldDelegate.screenSize;
+    return cellRect != oldDelegate.cellRect ||
+        screenSize != oldDelegate.screenSize;
   }
 }
