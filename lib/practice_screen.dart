@@ -240,8 +240,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
       if (lower.contains('fold')) return Colors.blue;
       if (lower.contains('call')) return Colors.green;
       if (lower.contains('raise')) return Colors.red;
-      if (lower.contains('all-in') || lower.contains('shove'))
+      if (lower.contains('all-in') || lower.contains('shove')) {
         return Colors.deepOrange;
+      }
       return Colors.grey;
     }
 
@@ -339,7 +340,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       horizontal: 48,
                       vertical: 20,
                     ),
-                    textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textStyle: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

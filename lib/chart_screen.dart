@@ -601,8 +601,9 @@ class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
     // Safety checks to prevent clipping
     if (dx < 0) dx = 0;
     if (dy < 0) dy = 0;
-    if (dy + childSize.height > screenSize.height)
+    if (dy + childSize.height > screenSize.height) {
       dy = screenSize.height - childSize.height;
+    }
 
     return Offset(dx, dy);
   }
