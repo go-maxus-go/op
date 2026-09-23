@@ -40,8 +40,7 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 
   Future<void> _loadChart() async {
-    final fileName =
-        '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.position.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
+    final fileName = '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
     try {
       final yamlString = await rootBundle.loadString('assets/charts/$fileName');
       final yamlDoc = loadYaml(yamlString);
@@ -49,8 +48,8 @@ class _ChartScreenState extends State<ChartScreen> {
       Map<String, Map<String, int>> newWeights = {};
       Set<String> newUniqueActions = {};
 
-      if (yamlDoc is YamlMap && yamlDoc.containsKey('hands')) {
-        final handsList = yamlDoc['hands'];
+      if (yamlDoc is YamlMap && yamlDoc.containsKey(widget.position)) {
+        final handsList = yamlDoc[widget.position];
         if (handsList is YamlList) {
           for (var item in handsList) {
             if (item is YamlMap) {
@@ -124,8 +123,9 @@ class _ChartScreenState extends State<ChartScreen> {
     if (lowerAction.contains('fold')) return colors.foldColor;
     if (lowerAction.contains('call')) return colors.callColor;
     if (lowerAction.contains('raise')) return colors.raiseColor;
-    if (lowerAction.contains('all-in') || lowerAction.contains('shove'))
+    if (lowerAction.contains('all-in') || lowerAction.contains('shove')) {
       return colors.allInColor;
+    }
     return colors.defaultColor;
   }
 
@@ -167,6 +167,60 @@ class _ChartScreenState extends State<ChartScreen> {
     return Row(children: bars);
   }
 
+  Map<String, double> _calculateActionFrequencies() {
+    if (_handActionWeights.isEmpty) return {};
+
+    Map<String, double> actionCombos = {};
+    int totalCombos = 1326;
+
+    for (int row = 0; row < 13; row++) {
+      for (int col = 0; col < 13; col++) {
+        int combos = 0;
+        if (row == col) {
+          combos = 6;
+        } else if (col > row) {
+          combos = 4;
+        } else {
+          combos = 12;
+        }
+
+        String hand = _getHandAt(row, col);
+        Map<String, int> weights = _handActionWeights[hand] ?? {};
+
+        // To properly handle missing "Fold" weights, we assume anything not explicitly accounted for is a Fold.
+        int nonFoldTotal = 0;
+        weights.forEach((action, weight) {
+          if (!action.toLowerCase().contains('fold')) {
+            nonFoldTotal += weight;
+            actionCombos[action] = (actionCombos[action] ?? 0) + (combos * weight / 100);
+          }
+        });
+
+        int foldWeight = weights.entries
+            .where((e) => e.key.toLowerCase().contains('fold'))
+            .fold(0, (sum, e) => sum + e.value);
+            
+        // Fallback: if there's no explicitly defined fold but actions don't sum to 100
+        if (foldWeight == 0 && nonFoldTotal < 100) {
+          foldWeight = 100 - nonFoldTotal;
+        }
+
+        if (foldWeight > 0) {
+           // We might need to map it to a standard "Fold" label if it's implicitly calculated
+           String foldLabel = _uniqueActions.firstWhere((a) => a.toLowerCase().contains('fold'), orElse: () => 'Fold');
+           actionCombos[foldLabel] = (actionCombos[foldLabel] ?? 0) + (combos * foldWeight / 100);
+        }
+      }
+    }
+
+    Map<String, double> actionFrequencies = {};
+    actionCombos.forEach((action, combos) {
+      actionFrequencies[action] = (combos / totalCombos) * 100;
+    });
+
+    return actionFrequencies;
+  }
+
   Widget _buildLegend(ChartColors colors) {
     if (_uniqueActions.isEmpty) return const SizedBox.shrink();
 
@@ -178,11 +232,14 @@ class _ChartScreenState extends State<ChartScreen> {
         return a.compareTo(b);
       });
 
+    final frequencies = _calculateActionFrequencies();
+
     return Wrap(
       spacing: 16.0,
       runSpacing: 8.0,
       alignment: WrapAlignment.center,
       children: sortedActions.map((action) {
+        final double freq = frequencies[action] ?? 0;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -195,7 +252,7 @@ class _ChartScreenState extends State<ChartScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Text(action, style: const TextStyle(fontSize: 14)),
+            Text('$action (${freq.toStringAsFixed(1)}%)', style: const TextStyle(fontSize: 14)),
           ],
         );
       }).toList(),

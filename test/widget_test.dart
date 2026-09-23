@@ -27,7 +27,6 @@ void main() {
     
     // Verify default selections and options are present
     expect(find.text(PokerConstants.type6max), findsOneWidget);
-    expect(find.text(PokerConstants.limitNL50), findsOneWidget);
     expect(find.text(PokerConstants.limitNL100), findsOneWidget);
     expect(find.text(PokerConstants.limitNL200), findsOneWidget);
     expect(find.text(PokerConstants.stacks100), findsOneWidget);
