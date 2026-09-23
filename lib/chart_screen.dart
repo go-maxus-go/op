@@ -33,6 +33,10 @@ class _ChartScreenState extends State<ChartScreen> {
   bool _isLoading = true;
   bool _hasError = false;
 
+  String? _selectedHand;
+  Map<String, int>? _selectedActionWeights;
+  Rect? _selectedCellRect;
+
   @override
   void initState() {
     super.initState();
@@ -259,6 +263,88 @@ class _ChartScreenState extends State<ChartScreen> {
     );
   }
 
+  Widget _buildPopupOverlay(ChartColors colors) {
+    if (_selectedHand == null || _selectedActionWeights == null || _selectedCellRect == null) {
+      return const SizedBox.shrink();
+    }
+
+    String hand = _selectedHand!;
+    Map<String, int> actionWeights = _selectedActionWeights!;
+    Rect cellRect = _selectedCellRect!;
+
+    int foldWeight = actionWeights.entries
+        .where((e) => e.key.toLowerCase().contains('fold'))
+        .fold(0, (sum, e) => sum + e.value);
+    int nonFoldTotal = 0;
+    actionWeights.forEach((k, v) {
+      if (!k.toLowerCase().contains('fold')) {
+        nonFoldTotal += v;
+      }
+    });
+    if (foldWeight == 0 && nonFoldTotal < 100) {
+      foldWeight = 100 - nonFoldTotal;
+    }
+
+    final List<Widget> actionRows = [];
+
+    void addActionRow(String action, int weight) {
+      if (weight <= 0) return;
+      actionRows.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _getColorForAction(action, colors),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('$action: ', style: const TextStyle(fontWeight: FontWeight.w500)),
+              Text('$weight%', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        )
+      );
+    }
+
+    actionWeights.forEach((action, weight) {
+      if (!action.toLowerCase().contains('fold')) {
+        addActionRow(action, weight);
+      }
+    });
+
+    if (foldWeight > 0) {
+      String foldLabel = _uniqueActions.firstWhere((a) => a.toLowerCase().contains('fold'), orElse: () => 'Fold');
+      addActionRow(foldLabel, foldWeight);
+    }
+
+    return CustomSingleChildLayout(
+      delegate: _PopupLayoutDelegate(cellRect, MediaQuery.of(context).size),
+      child: Material(
+        elevation: 8,
+        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).dialogTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Hand: $hand', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              ...actionRows,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chartColors = Theme.of(context).extension<ChartColors>()!;
@@ -278,100 +364,187 @@ class _ChartScreenState extends State<ChartScreen> {
                 style: TextStyle(fontSize: 18),
               ),
             )
-          : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final gridSize =
-                            constraints.maxWidth < constraints.maxHeight
-                            ? constraints.maxWidth
-                            : constraints.maxHeight;
+          : Builder(
+              builder: (scaffoldContext) {
+                return GestureDetector(
+                  onTap: () {
+                    if (_selectedHand != null) {
+                      setState(() {
+                        _selectedHand = null;
+                        _selectedActionWeights = null;
+                        _selectedCellRect = null;
+                      });
+                    }
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final gridSize =
+                                      constraints.maxWidth < constraints.maxHeight
+                                      ? constraints.maxWidth
+                                      : constraints.maxHeight;
 
-                        return Center(
-                          child: SizedBox(
-                            width: gridSize,
-                            height: gridSize,
-                            child: GridView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 13,
-                                    childAspectRatio: 1.0,
-                                    crossAxisSpacing: 1,
-                                    mainAxisSpacing: 1,
-                                  ),
-                              itemCount: 13 * 13,
-                              itemBuilder: (context, index) {
-                                int row = index ~/ 13;
-                                int col = index % 13;
-                                String hand = _getHandAt(row, col);
-                                Map<String, int> actionWeights =
-                                    _handActionWeights[hand] ?? {};
-
-                                int foldWeight = actionWeights.entries
-                                    .where(
-                                      (e) =>
-                                          e.key.toLowerCase().contains('fold'),
-                                    )
-                                    .fold(0, (sum, e) => sum + e.value);
-
-                                bool isMostlyFolded =
-                                    (foldWeight >= 100) ||
-                                    actionWeights.isEmpty;
-
-                                return Container(
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      _buildCellBackground(
-                                        actionWeights,
-                                        chartColors,
-                                      ),
-                                      Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            hand,
-                                            style: TextStyle(
-                                              color: isMostlyFolded
-                                                  ? Colors.grey.shade400
-                                                  : Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              shadows: const [
-                                                Shadow(
-                                                  blurRadius: 2.0,
-                                                  color: Colors.black87,
-                                                  offset: Offset(1.0, 1.0),
-                                                ),
-                                              ],
+                                  return Center(
+                                    child: SizedBox(
+                                      width: gridSize,
+                                      height: gridSize,
+                                      child: GridView.builder(
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        gridDelegate:
+                                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 13,
+                                              childAspectRatio: 1.0,
+                                              crossAxisSpacing: 1,
+                                              mainAxisSpacing: 1,
                                             ),
-                                          ),
-                                        ),
+                                        itemCount: 13 * 13,
+                                        itemBuilder: (context, index) {
+                                          int row = index ~/ 13;
+                                          int col = index % 13;
+                                          String hand = _getHandAt(row, col);
+                                          Map<String, int> actionWeights =
+                                              _handActionWeights[hand] ?? {};
+
+                                          int foldWeight = actionWeights.entries
+                                              .where(
+                                                (e) =>
+                                                    e.key.toLowerCase().contains('fold'),
+                                              )
+                                              .fold(0, (sum, e) => sum + e.value);
+
+                                          bool isMostlyFolded =
+                                              (foldWeight >= 100) ||
+                                              actionWeights.isEmpty;
+
+                                          return Builder(
+                                            builder: (cellContext) {
+                                              return GestureDetector(
+                                                onTap: () {
+                                                  final RenderBox overlay = scaffoldContext.findRenderObject() as RenderBox;
+                                                  final RenderBox box = cellContext.findRenderObject() as RenderBox;
+                                                  final position = box.localToGlobal(Offset.zero, ancestor: overlay);
+                                                  final cellRect = position & box.size;
+                                                  setState(() {
+                                                    if (_selectedHand == hand) {
+                                                      _selectedHand = null;
+                                                      _selectedActionWeights = null;
+                                                      _selectedCellRect = null;
+                                                    } else {
+                                                      _selectedHand = hand;
+                                                      _selectedActionWeights = actionWeights;
+                                                      _selectedCellRect = cellRect;
+                                                    }
+                                                  });
+                                                },
+                                                child: Container(
+                                                  clipBehavior: Clip.antiAlias,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(2),
+                                                  ),
+                                                  child: Stack(
+                                                    fit: StackFit.expand,
+                                                    children: [
+                                                      _buildCellBackground(
+                                                        actionWeights,
+                                                        chartColors,
+                                                      ),
+                                                      Center(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            hand,
+                                                            style: TextStyle(
+                                                              color: isMostlyFolded
+                                                                  ? Colors.grey.shade400
+                                                                  : Colors.white,
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.bold,
+                                                              shadows: const [
+                                                                Shadow(
+                                                                  blurRadius: 2.0,
+                                                                  color: Colors.black87,
+                                                                  offset: Offset(1.0, 1.0),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          );
+                                        },
                                       ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                            const SizedBox(height: 16),
+                            _buildLegend(chartColors),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      _buildPopupOverlay(chartColors),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildLegend(chartColors),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                );
+              }
             ),
     );
+  }
+}
+
+class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
+  final Rect cellRect;
+  final Size screenSize;
+
+  _PopupLayoutDelegate(this.cellRect, this.screenSize);
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    return BoxConstraints(
+      maxWidth: screenSize.width,
+      maxHeight: screenSize.height,
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    double dx = cellRect.right;
+    double dy = cellRect.bottom - childSize.height;
+
+    // If too high (dy < 0), display bottom right (top of popup aligned with top of cell)
+    if (dy < 0) {
+      dy = cellRect.top;
+    }
+
+    // If too right, display on the left side
+    if (dx + childSize.width > screenSize.width) {
+      dx = cellRect.left - childSize.width;
+    }
+
+    // Safety checks to prevent clipping
+    if (dx < 0) dx = 0;
+    if (dy < 0) dy = 0;
+    if (dy + childSize.height > screenSize.height) dy = screenSize.height - childSize.height;
+
+    return Offset(dx, dy);
+  }
+
+  @override
+  bool shouldRelayout(_PopupLayoutDelegate oldDelegate) {
+    return cellRect != oldDelegate.cellRect || screenSize != oldDelegate.screenSize;
   }
 }
