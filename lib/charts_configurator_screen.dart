@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'chart_screen.dart';
+import 'practice_screen.dart';
 import 'constants.dart';
 
 class ChartsConfiguratorScreen extends StatefulWidget {
-  const ChartsConfiguratorScreen({super.key});
+  final bool isPractice;
+
+  const ChartsConfiguratorScreen({super.key, this.isPractice = false});
 
   @override
   State<ChartsConfiguratorScreen> createState() =>
@@ -56,7 +59,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chart Configuration'),
+        title: Text(widget.isPractice ? 'Practice Configuration' : 'Chart Configuration'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -119,19 +122,35 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                 textStyle: const TextStyle(fontSize: 20),
               ),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChartScreen(
-                      type: PokerConstants.type6max,
-                      limit: _selectedLimit,
-                      stacks: PokerConstants.stacks100,
-                      raise: PokerConstants.raise3bb,
-                      position: _selectedPosition,
-                      chart: _selectedChart,
+                if (widget.isPractice) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PracticeScreen(
+                        type: PokerConstants.type6max,
+                        limit: _selectedLimit,
+                        stacks: PokerConstants.stacks100,
+                        raise: PokerConstants.raise3bb,
+                        position: _selectedPosition,
+                        chart: _selectedChart,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChartScreen(
+                        type: PokerConstants.type6max,
+                        limit: _selectedLimit,
+                        stacks: PokerConstants.stacks100,
+                        raise: PokerConstants.raise3bb,
+                        position: _selectedPosition,
+                        chart: _selectedChart,
+                      ),
+                    ),
+                  );
+                }
               },
               child: const Text('Next'),
             ),

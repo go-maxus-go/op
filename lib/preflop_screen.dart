@@ -28,11 +28,27 @@ class PreflopScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ChartsConfiguratorScreen(),
+                      builder: (context) => const ChartsConfiguratorScreen(isPractice: false),
                     ),
                   );
                 },
                 child: const Text('Charts'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 24.0),
+                  textStyle: const TextStyle(fontSize: 24),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChartsConfiguratorScreen(isPractice: true),
+                    ),
+                  );
+                },
+                child: const Text('Practice'),
               ),
             ],
           ),
