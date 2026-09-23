@@ -283,13 +283,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: color,
                         foregroundColor: Colors.white,
+                        minimumSize: const Size(140, 80),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
+                          horizontal: 24,
+                          vertical: 20,
                         ),
                         textStyle: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(action),
@@ -330,11 +334,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ElevatedButton(
                   onPressed: _dealHand,
                   style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(200, 80),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
+                      horizontal: 48,
+                      vertical: 20,
                     ),
-                    textStyle: const TextStyle(fontSize: 20),
+                    textStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text('Next Hand'),
                 ),
