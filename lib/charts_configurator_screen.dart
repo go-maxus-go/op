@@ -13,6 +13,7 @@ class ChartsConfiguratorScreen extends StatefulWidget {
 }
 
 class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
+  String _selectedMode = 'Chart';
   String _selectedLimit = PokerConstants.limitNL100;
   String _selectedPosition = PokerConstants.positionUTG;
   String _selectedChart = PokerConstants.chartOPR;
@@ -90,19 +91,6 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
               null,
             ),
             _buildSection(
-              'Position',
-              [
-                PokerConstants.positionUTG,
-                PokerConstants.positionHJ,
-                PokerConstants.positionCO,
-                PokerConstants.positionBTN,
-                PokerConstants.positionSB,
-                PokerConstants.positionBB,
-              ],
-              _selectedPosition,
-              (val) => setState(() => _selectedPosition = val),
-            ),
-            _buildSection(
               'Charts',
               [
                 PokerConstants.chartOPR,
@@ -111,61 +99,74 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                 PokerConstants.chart4bet,
               ],
               _selectedChart,
-              (val) => setState(() => _selectedChart = val),
+              (val) {
+                setState(() {
+                  _selectedChart = val;
+                  if (_selectedChart == PokerConstants.chartOPR &&
+                      _selectedPosition == PokerConstants.positionBB) {
+                    _selectedPosition = PokerConstants.positionSB;
+                  }
+                });
+              },
+            ),
+            _buildSection(
+              'Position',
+              [
+                PokerConstants.positionUTG,
+                PokerConstants.positionHJ,
+                PokerConstants.positionCO,
+                PokerConstants.positionBTN,
+                PokerConstants.positionSB,
+                if (_selectedChart != PokerConstants.chartOPR)
+                  PokerConstants.positionBB,
+              ],
+              _selectedPosition,
+              (val) => setState(() => _selectedPosition = val),
+            ),
+            _buildSection(
+              'Mode',
+              ['Chart', 'Practice'],
+              _selectedMode,
+              (val) => setState(() => _selectedMode = val),
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      textStyle: const TextStyle(fontSize: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                textStyle: const TextStyle(fontSize: 20),
+              ),
+              onPressed: () {
+                if (_selectedMode == 'Practice') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PracticeScreen(
+                        type: PokerConstants.type6max,
+                        limit: _selectedLimit,
+                        stacks: PokerConstants.stacks100,
+                        raise: PokerConstants.raise3bb,
+                        position: _selectedPosition,
+                        chart: _selectedChart,
+                      ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChartScreen(
-                            type: PokerConstants.type6max,
-                            limit: _selectedLimit,
-                            stacks: PokerConstants.stacks100,
-                            raise: PokerConstants.raise3bb,
-                            position: _selectedPosition,
-                            chart: _selectedChart,
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('Chart'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      textStyle: const TextStyle(fontSize: 20),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChartScreen(
+                        type: PokerConstants.type6max,
+                        limit: _selectedLimit,
+                        stacks: PokerConstants.stacks100,
+                        raise: PokerConstants.raise3bb,
+                        position: _selectedPosition,
+                        chart: _selectedChart,
+                      ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PracticeScreen(
-                            type: PokerConstants.type6max,
-                            limit: _selectedLimit,
-                            stacks: PokerConstants.stacks100,
-                            raise: PokerConstants.raise3bb,
-                            position: _selectedPosition,
-                            chart: _selectedChart,
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('Practice'),
-                  ),
-                ),
-              ],
+                  );
+                }
+              },
+              child: const Text('Next'),
             ),
           ],
         ),
