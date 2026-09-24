@@ -48,6 +48,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   bool _hasAnswered = false;
   String? _selectedAction;
+  bool _autoAdvance = true;
+  bool _isProcessing = false;
 
   int _totalHands = 0;
   int _correctHands = 0;
@@ -117,6 +119,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     _hasAnswered = false;
     _selectedAction = null;
+    _isProcessing = false;
     setState(() {});
   }
 
@@ -224,8 +227,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return evaluationOrder.last;
   }
 
-  void _onActionSelected(String action) {
-    if (_hasAnswered) return;
+  void _onActionSelected(String action) async {
+    if (_hasAnswered || _isProcessing) return;
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
 
     final correctAction = _getCorrectAction();
     final isCorrect = action == correctAction;
@@ -236,20 +246,25 @@ class _PracticeScreenState extends State<PracticeScreen> {
         lowerAction.contains('all-in') ||
         lowerAction.contains('shove');
 
-    setState(() {
-      _selectedAction = action;
-      _hasAnswered = true;
-      _totalHands++;
-      if (isCorrect) {
+    if (isCorrect && _autoAdvance) {
+      setState(() {
+        _totalHands++;
         _correctHands++;
-      }
-      if (isVpip) {
-        _vpipCount++;
-      }
-      if (isPfr) {
-        _pfrCount++;
-      }
-    });
+        if (isVpip) _vpipCount++;
+        if (isPfr) _pfrCount++;
+      });
+      _dealHand();
+    } else {
+      setState(() {
+        _selectedAction = action;
+        _hasAnswered = true;
+        _totalHands++;
+        if (isCorrect) _correctHands++;
+        if (isVpip) _vpipCount++;
+        if (isPfr) _pfrCount++;
+        _isProcessing = false;
+      });
+    }
   }
 
   Map<String, int> _getCurrentHandWeights() {
@@ -409,7 +424,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   children: sortedActions.map((action) {
                     final color = getButtonColor(action);
                     return ElevatedButton(
-                      onPressed: () => _onActionSelected(action),
+                      onPressed: _isProcessing ? null : () => _onActionSelected(action),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: color,
                         foregroundColor: Colors.white,
@@ -498,24 +513,47 @@ class _PracticeScreenState extends State<PracticeScreen> {
         color: Colors.grey.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCompactStatItem('Hands', '$_totalHands'),
-              const SizedBox(width: 16),
-              _buildCompactStatItem('Accuracy', '${accuracy.toStringAsFixed(0)}%'),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCompactStatItem('Hands', '$_totalHands'),
+                  const SizedBox(width: 16),
+                  _buildCompactStatItem('Accuracy', '${accuracy.toStringAsFixed(0)}%'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCompactStatItem('VPIP', '${vpip.toStringAsFixed(1)}%'),
+                  const SizedBox(width: 16),
+                  _buildCompactStatItem('PFR', '${pfr.toStringAsFixed(1)}%'),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(width: 24),
+          Column(
             children: [
-              _buildCompactStatItem('VPIP', '${vpip.toStringAsFixed(1)}%'),
-              const SizedBox(width: 16),
-              _buildCompactStatItem('PFR', '${pfr.toStringAsFixed(1)}%'),
+              const Text(
+                'Auto\nAdvance',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+              Transform.scale(
+                scale: 0.7,
+                child: Switch(
+                  value: _autoAdvance,
+                  onChanged: (val) => setState(() => _autoAdvance = val),
+                ),
+              ),
             ],
           ),
         ],
