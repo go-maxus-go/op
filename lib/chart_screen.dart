@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import 'utils/range_parser.dart';
 import 'theme.dart';
+import 'action_popup.dart';
 
 class ChartScreen extends StatefulWidget {
   final String type;
@@ -272,107 +273,6 @@ class _ChartScreenState extends State<ChartScreen> {
     );
   }
 
-  Widget _buildPopupOverlay(ChartColors colors) {
-    if (_selectedHand == null ||
-        _selectedActionWeights == null ||
-        _selectedCellRect == null) {
-      return const SizedBox.shrink();
-    }
-
-    String hand = _selectedHand!;
-    Map<String, int> actionWeights = _selectedActionWeights!;
-    Rect cellRect = _selectedCellRect!;
-
-    int foldWeight = actionWeights.entries
-        .where((e) => e.key.toLowerCase().contains('fold'))
-        .fold(0, (sum, e) => sum + e.value);
-    int nonFoldTotal = 0;
-    actionWeights.forEach((k, v) {
-      if (!k.toLowerCase().contains('fold')) {
-        nonFoldTotal += v;
-      }
-    });
-    if (foldWeight == 0 && nonFoldTotal < 100) {
-      foldWeight = 100 - nonFoldTotal;
-    }
-
-    final List<Widget> actionRows = [];
-
-    void addActionRow(String action, int weight) {
-      if (weight <= 0) return;
-      actionRows.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: _getColorForAction(action, colors),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$action: ',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              Text(
-                '$weight%',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    actionWeights.forEach((action, weight) {
-      if (!action.toLowerCase().contains('fold')) {
-        addActionRow(action, weight);
-      }
-    });
-
-    if (foldWeight > 0) {
-      String foldLabel = _uniqueActions.firstWhere(
-        (a) => a.toLowerCase().contains('fold'),
-        orElse: () => 'Fold',
-      );
-      addActionRow(foldLabel, foldWeight);
-    }
-
-    return CustomSingleChildLayout(
-      delegate: _PopupLayoutDelegate(cellRect, MediaQuery.of(context).size),
-      child: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(8),
-        color:
-            Theme.of(context).dialogTheme.backgroundColor ??
-            Theme.of(context).colorScheme.surface,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hand: $hand',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...actionRows,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final chartColors = Theme.of(context).extension<ChartColors>()!;
@@ -559,58 +459,18 @@ class _ChartScreenState extends State<ChartScreen> {
                           ],
                         ),
                       ),
-                      _buildPopupOverlay(chartColors),
+                      if (_selectedHand != null && _selectedActionWeights != null && _selectedCellRect != null)
+                        ActionPopup(
+                          cellRect: _selectedCellRect!,
+                          hand: _selectedHand!,
+                          actionWeights: _selectedActionWeights!,
+                          uniqueActions: _uniqueActions,
+                        ),
                     ],
                   ),
                 );
               },
             ),
     );
-  }
-}
-
-class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
-  final Rect cellRect;
-  final Size screenSize;
-
-  _PopupLayoutDelegate(this.cellRect, this.screenSize);
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    return BoxConstraints(
-      maxWidth: screenSize.width,
-      maxHeight: screenSize.height,
-    );
-  }
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    double dx = cellRect.right;
-    double dy = cellRect.bottom - childSize.height;
-
-    // If too high (dy < 0), display bottom right (top of popup aligned with top of cell)
-    if (dy < 0) {
-      dy = cellRect.top;
-    }
-
-    // If too right, display on the left side
-    if (dx + childSize.width > screenSize.width) {
-      dx = cellRect.left - childSize.width;
-    }
-
-    // Safety checks to prevent clipping
-    if (dx < 0) dx = 0;
-    if (dy < 0) dy = 0;
-    if (dy + childSize.height > screenSize.height) {
-      dy = screenSize.height - childSize.height;
-    }
-
-    return Offset(dx, dy);
-  }
-
-  @override
-  bool shouldRelayout(_PopupLayoutDelegate oldDelegate) {
-    return cellRect != oldDelegate.cellRect ||
-        screenSize != oldDelegate.screenSize;
   }
 }

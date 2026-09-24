@@ -166,18 +166,6 @@ class _PlayerSeat extends StatelessWidget {
                   child: const Text('D', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
               ],
-              if (position == 'SB' || position == 'BB') ...[
-                const SizedBox(width: 4),
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: position == 'SB' ? Colors.blue : Colors.yellow.shade700,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1),
-                  ),
-                ),
-              ],
             ],
           ),
         ),

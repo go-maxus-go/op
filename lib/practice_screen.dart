@@ -5,6 +5,7 @@ import 'dart:math';
 import 'utils/range_parser.dart';
 import 'chart_screen.dart';
 import 'poker_table_view.dart';
+import 'action_popup.dart';
 
 class PracticeScreen extends StatefulWidget {
   final String type;
@@ -52,6 +53,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
   String? _selectedAction;
   bool _autoAdvance = true;
   bool _isProcessing = false;
+  bool _isHintVisible = false;
+  Rect? _hintButtonRect;
 
   int _totalHands = 0;
   int _correctHands = 0;
@@ -392,13 +395,24 @@ class _PracticeScreenState extends State<PracticeScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildCompactStats(),
+      body: GestureDetector(
+        onTap: () {
+          if (_isHintVisible) {
+            setState(() {
+              _isHintVisible = false;
+            });
+          }
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildCompactStats(),
               const SizedBox(height: 16),
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.45,
@@ -408,27 +422,52 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   playerHands: _playerHands,
                 ),
               ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)?.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)!,
-                    width: 2,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)?.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)!,
+                        width: 2,
+                      ),
+                    ),
+                    child: Text(
+                      'RNG: $_currentRng',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0),
+                      ),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'RNG: $_currentRng',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0),
+                  const SizedBox(width: 16),
+                  Builder(
+                    builder: (buttonContext) {
+                      return IconButton(
+                        icon: const Icon(Icons.lightbulb_outline, size: 32),
+                        color: Colors.amber,
+                        tooltip: 'Show Hint',
+                        onPressed: _hasAnswered
+                            ? null
+                            : () {
+                                final RenderBox box = buttonContext.findRenderObject() as RenderBox;
+                                final position = box.localToGlobal(Offset.zero);
+                                setState(() {
+                                  _hintButtonRect = position & box.size;
+                                  _isHintVisible = !_isHintVisible;
+                                });
+                              },
+                      );
+                    },
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               if (!_hasAnswered) ...[
                 Wrap(
                   spacing: 16,
@@ -512,6 +551,16 @@ class _PracticeScreenState extends State<PracticeScreen> {
           ),
         ),
       ),
+      if (_isHintVisible && _hintButtonRect != null && _currentHand != null)
+        ActionPopup(
+          cellRect: _hintButtonRect!,
+          hand: _currentHand!,
+          actionWeights: _getCurrentHandWeights(),
+          uniqueActions: _uniqueActions,
+        ),
+    ],
+  ),
+),
     );
   }
 
