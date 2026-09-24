@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import 'dart:math';
 import 'utils/range_parser.dart';
+import 'chart_screen.dart';
 
 class PracticeScreen extends StatefulWidget {
   final String type;
@@ -274,7 +275,32 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Practice: ${widget.position}'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Practice: ${widget.position}'),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.bar_chart, size: 24),
+              tooltip: 'View Chart',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChartScreen(
+                      type: widget.type,
+                      limit: widget.limit,
+                      stacks: widget.stacks,
+                      raise: widget.raise,
+                      position: widget.position,
+                      chart: widget.chart,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
