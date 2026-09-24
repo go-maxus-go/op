@@ -43,6 +43,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   PlayingCard? _card1;
   PlayingCard? _card2;
   String? _currentHand;
+  int _currentRng = 50;
 
   bool _hasAnswered = false;
   String? _selectedAction;
@@ -68,6 +69,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _deck.shuffle(Random());
     _card1 = _deck[0];
     _card2 = _deck[1];
+    _currentRng = Random().nextInt(100) + 1;
 
     int i1 = RangeParser.rankIndex(_card1!.rank);
     int i2 = RangeParser.rankIndex(_card2!.rank);
@@ -214,10 +216,34 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     final weights = _getCurrentHandWeights();
 
+    String? correctAction;
+    if (weights.isNotEmpty) {
+      final List<String> evaluationOrder = weights.keys.toList()..sort((a, b) {
+        int getPriority(String action) {
+          final lower = action.toLowerCase();
+          if (lower.contains('all-in') || lower.contains('shove')) return 0;
+          if (lower.contains('raise')) return 1;
+          if (lower.contains('call')) return 2;
+          if (lower.contains('fold')) return 3;
+          return 4;
+        }
+        return getPriority(a).compareTo(getPriority(b));
+      });
+
+      int cumulative = 0;
+      for (String action in evaluationOrder) {
+        cumulative += weights[action] ?? 0;
+        if (_currentRng <= cumulative) {
+          correctAction = action;
+          break;
+        }
+      }
+      correctAction ??= evaluationOrder.last;
+    }
+
     bool isCorrect = false;
     if (_hasAnswered && _selectedAction != null) {
-      final selectedWeight = weights[_selectedAction!] ?? 0;
-      isCorrect = selectedWeight > 0;
+      isCorrect = _selectedAction == correctAction;
     }
 
     // Sort actions: Fold, Call, Raise
@@ -267,12 +293,27 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-              if (!_hasAnswered) ...[
-                Text(
-                  'What is the correct action?',
-                  style: Theme.of(context).textTheme.titleLarge,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)?.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)!,
+                    width: 2,
+                  ),
                 ),
-                const SizedBox(height: 24),
+                child: Text(
+                  'RNG: $_currentRng',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              if (!_hasAnswered) ...[
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
@@ -284,9 +325,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: color,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(140, 80),
+                        fixedSize: const Size(160, 80),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
+                          horizontal: 16,
                           vertical: 20,
                         ),
                         textStyle: const TextStyle(
@@ -309,7 +350,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isCorrect ? 'Correct!' : 'Incorrect',
+                  isCorrect ? 'Correct!' : 'Incorrect (Should be $correctAction)',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
