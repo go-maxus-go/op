@@ -311,6 +311,21 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return fullWeights;
   }
 
+  List<MapEntry<String, int>> _getSortedWeightEntries(Map<String, int> weights) {
+    return weights.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) {
+        int getPriority(String action) {
+          final lower = action.toLowerCase();
+          if (lower.contains('all-in') || lower.contains('shove')) return 0;
+          if (lower.contains('raise')) return 1;
+          if (lower.contains('call')) return 2;
+          if (lower.contains('fold')) return 3;
+          return 4;
+        }
+        return getPriority(a.key).compareTo(getPriority(b.key));
+      });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -481,10 +496,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         backgroundColor: color,
                         foregroundColor: Colors.white,
                         fixedSize: const Size(160, 80),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 20,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         textStyle: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -493,7 +505,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text(action),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            action,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
                     );
                   }).toList(),
                 ),
@@ -505,7 +525,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isCorrect ? 'Correct!' : 'Incorrect (Should be $correctAction)',
+                  isCorrect ? 'Correct!' : 'Should be $correctAction',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -519,9 +539,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ),
                 const SizedBox(height: 8),
                 // Show probabilities
-                ...weights.entries
-                    .where((e) => e.value > 0)
-                    .map(
+                ..._getSortedWeightEntries(weights).map(
                       (e) => Text(
                         '${e.key}: ${e.value}%',
                         style: const TextStyle(fontSize: 18),

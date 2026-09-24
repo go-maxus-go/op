@@ -76,18 +76,32 @@ class ActionPopup extends StatelessWidget {
       );
     }
 
-    actionWeights.forEach((action, weight) {
-      if (!action.toLowerCase().contains('fold')) {
-        addActionRow(action, weight);
+    // Define priority-based sorting for all potential actions
+    final List<String> allActionNames = actionWeights.keys.toSet().toList();
+    if (!allActionNames.any((a) => a.toLowerCase().contains('fold'))) {
+      allActionNames.add('Fold');
+    }
+
+    allActionNames.sort((a, b) {
+      int getPriority(String action) {
+        final lower = action.toLowerCase();
+        if (lower.contains('all-in') || lower.contains('shove')) return 0;
+        if (lower.contains('raise')) return 1;
+        if (lower.contains('call')) return 2;
+        if (lower.contains('fold')) return 3;
+        return 4;
       }
+      return getPriority(a).compareTo(getPriority(b));
     });
 
-    if (foldWeight > 0) {
-      String foldLabel = uniqueActions.firstWhere(
-        (a) => a.toLowerCase().contains('fold'),
-        orElse: () => 'Fold',
-      );
-      addActionRow(foldLabel, foldWeight);
+    for (var actionName in allActionNames) {
+      int weight;
+      if (actionName.toLowerCase().contains('fold')) {
+        weight = foldWeight;
+      } else {
+        weight = actionWeights[actionName] ?? 0;
+      }
+      addActionRow(actionName, weight);
     }
 
     return CustomSingleChildLayout(

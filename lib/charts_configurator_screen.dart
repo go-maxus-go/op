@@ -13,9 +13,9 @@ class ChartsConfiguratorScreen extends StatefulWidget {
 }
 
 class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
-  String _selectedMode = 'Chart';
+  String _selectedMode = 'Practice';
   String _selectedLimit = PokerConstants.limitNL100;
-  String _selectedPosition = PokerConstants.positionUTG;
+  String _selectedPosition = 'All';
   String _selectedChart = PokerConstants.chartOPR;
 
   Widget _buildSection(
@@ -73,7 +73,9 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
               (val) {
                 setState(() {
                   _selectedMode = val;
-                  if (_selectedMode == 'Chart' && _selectedPosition == 'All') {
+                  if (_selectedMode == 'Practice') {
+                    _selectedPosition = 'All';
+                  } else if (_selectedMode == 'Chart' && _selectedPosition == 'All') {
                     _selectedPosition = PokerConstants.positionUTG;
                   }
                 });
