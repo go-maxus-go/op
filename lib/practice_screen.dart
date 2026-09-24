@@ -49,6 +49,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
   bool _hasAnswered = false;
   String? _selectedAction;
 
+  int _totalHands = 0;
+  int _correctHands = 0;
+  int _vpipCount = 0;
+  int _pfrCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -159,11 +164,59 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
   }
 
+  String? _getCorrectAction() {
+    final weights = _getCurrentHandWeights();
+    if (weights.isEmpty) return null;
+
+    final List<String> evaluationOrder = weights.keys.toList()
+      ..sort((a, b) {
+        int getPriority(String action) {
+          final lower = action.toLowerCase();
+          if (lower.contains('all-in') || lower.contains('shove')) return 0;
+          if (lower.contains('raise')) return 1;
+          if (lower.contains('call')) return 2;
+          if (lower.contains('fold')) return 3;
+          return 4;
+        }
+
+        return getPriority(a).compareTo(getPriority(b));
+      });
+
+    int cumulative = 0;
+    for (String action in evaluationOrder) {
+      cumulative += weights[action] ?? 0;
+      if (_currentRng <= cumulative) {
+        return action;
+      }
+    }
+    return evaluationOrder.last;
+  }
+
   void _onActionSelected(String action) {
     if (_hasAnswered) return;
+
+    final correctAction = _getCorrectAction();
+    final isCorrect = action == correctAction;
+
+    final lowerAction = action.toLowerCase();
+    final isVpip = !lowerAction.contains('fold');
+    final isPfr = lowerAction.contains('raise') ||
+        lowerAction.contains('all-in') ||
+        lowerAction.contains('shove');
+
     setState(() {
       _selectedAction = action;
       _hasAnswered = true;
+      _totalHands++;
+      if (isCorrect) {
+        _correctHands++;
+      }
+      if (isVpip) {
+        _vpipCount++;
+      }
+      if (isPfr) {
+        _pfrCount++;
+      }
     });
   }
 
@@ -216,31 +269,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
 
     final weights = _getCurrentHandWeights();
-
-    String? correctAction;
-    if (weights.isNotEmpty) {
-      final List<String> evaluationOrder = weights.keys.toList()..sort((a, b) {
-        int getPriority(String action) {
-          final lower = action.toLowerCase();
-          if (lower.contains('all-in') || lower.contains('shove')) return 0;
-          if (lower.contains('raise')) return 1;
-          if (lower.contains('call')) return 2;
-          if (lower.contains('fold')) return 3;
-          return 4;
-        }
-        return getPriority(a).compareTo(getPriority(b));
-      });
-
-      int cumulative = 0;
-      for (String action in evaluationOrder) {
-        cumulative += weights[action] ?? 0;
-        if (_currentRng <= cumulative) {
-          correctAction = action;
-          break;
-        }
-      }
-      correctAction ??= evaluationOrder.last;
-    }
+    final correctAction = _getCorrectAction();
 
     bool isCorrect = false;
     if (_hasAnswered && _selectedAction != null) {
@@ -309,7 +338,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 32),
+              _buildCompactStats(),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -422,6 +452,61 @@ class _PracticeScreenState extends State<PracticeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCompactStats() {
+    final vpip = _totalHands > 0 ? (_vpipCount / _totalHands * 100) : 0.0;
+    final pfr = _totalHands > 0 ? (_pfrCount / _totalHands * 100) : 0.0;
+    final accuracy = _totalHands > 0 ? (_correctHands / _totalHands * 100) : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCompactStatItem('Hands', '$_totalHands'),
+              const SizedBox(width: 16),
+              _buildCompactStatItem('Accuracy', '${accuracy.toStringAsFixed(0)}%'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCompactStatItem('VPIP', '${vpip.toStringAsFixed(1)}%'),
+              const SizedBox(width: 16),
+              _buildCompactStatItem('PFR', '${pfr.toStringAsFixed(1)}%'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactStatItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: Colors.grey),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
