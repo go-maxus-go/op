@@ -4,6 +4,7 @@ import 'package:yaml/yaml.dart';
 import 'dart:math';
 import 'utils/range_parser.dart';
 import 'chart_screen.dart';
+import 'poker_table_view.dart';
 
 class PracticeScreen extends StatefulWidget {
   final String type;
@@ -44,6 +45,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   PlayingCard? _card1;
   PlayingCard? _card2;
   String? _currentHand;
+  final Map<String, List<PlayingCard>> _playerHands = {};
   int _currentRng = 50;
 
   bool _hasAnswered = false;
@@ -103,6 +105,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _card1 = _deck[0];
     _card2 = _deck[1];
     _currentRng = Random().nextInt(100) + 1;
+
+    _playerHands.clear();
+    int deckIndex = 2;
+    for (var pos in ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN']) {
+      if (pos == _currentPosition) {
+        _playerHands[pos] = [_deck[0], _deck[1]];
+      } else {
+        _playerHands[pos] = [_deck[deckIndex], _deck[deckIndex + 1]];
+        deckIndex += 2;
+      }
+    }
 
     int i1 = RangeParser.rankIndex(_card1!.rank);
     int i2 = RangeParser.rankIndex(_card2!.rank);
@@ -387,13 +400,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
             children: [
               _buildCompactStats(),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(_card1!.assetPath),
-                  const SizedBox(width: 8),
-                  Image.asset(_card2!.assetPath),
-                ],
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.45,
+                child: PokerTableView(
+                  heroPosition: _currentPosition,
+                  chartType: widget.chart,
+                  playerHands: _playerHands,
+                ),
               ),
               const SizedBox(height: 32),
               Container(
