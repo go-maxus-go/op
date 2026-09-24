@@ -519,7 +519,7 @@ class _ChartScreenState extends State<ChartScreen> {
                                                                         .shade400
                                                                   : Colors
                                                                         .white,
-                                                              fontSize: 10,
+                                                              fontSize: 16,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,

@@ -5,9 +5,7 @@ import 'practice_screen.dart';
 import 'constants.dart';
 
 class ChartsConfiguratorScreen extends StatefulWidget {
-  final bool isPractice;
-
-  const ChartsConfiguratorScreen({super.key, this.isPractice = false});
+  const ChartsConfiguratorScreen({super.key});
 
   @override
   State<ChartsConfiguratorScreen> createState() =>
@@ -59,7 +57,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isPractice ? 'Practice Configuration' : 'Chart Configuration'),
+        title: const Text('Preflop'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -116,43 +114,58 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
               (val) => setState(() => _selectedChart = val),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                textStyle: const TextStyle(fontSize: 20),
-              ),
-              onPressed: () {
-                if (widget.isPractice) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PracticeScreen(
-                        type: PokerConstants.type6max,
-                        limit: _selectedLimit,
-                        stacks: PokerConstants.stacks100,
-                        raise: PokerConstants.raise3bb,
-                        position: _selectedPosition,
-                        chart: _selectedChart,
-                      ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      textStyle: const TextStyle(fontSize: 20),
                     ),
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChartScreen(
-                        type: PokerConstants.type6max,
-                        limit: _selectedLimit,
-                        stacks: PokerConstants.stacks100,
-                        raise: PokerConstants.raise3bb,
-                        position: _selectedPosition,
-                        chart: _selectedChart,
-                      ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChartScreen(
+                            type: PokerConstants.type6max,
+                            limit: _selectedLimit,
+                            stacks: PokerConstants.stacks100,
+                            raise: PokerConstants.raise3bb,
+                            position: _selectedPosition,
+                            chart: _selectedChart,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Chart'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      textStyle: const TextStyle(fontSize: 20),
                     ),
-                  );
-                }
-              },
-              child: const Text('Next'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PracticeScreen(
+                            type: PokerConstants.type6max,
+                            limit: _selectedLimit,
+                            stacks: PokerConstants.stacks100,
+                            raise: PokerConstants.raise3bb,
+                            position: _selectedPosition,
+                            chart: _selectedChart,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Practice'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

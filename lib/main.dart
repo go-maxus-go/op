@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'preflop_screen.dart';
+import 'charts_configurator_screen.dart';
 import 'theme.dart';
 
 void main() {
@@ -84,7 +84,7 @@ class MainMenuScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const PreflopScreen(),
+                      builder: (context) => const ChartsConfiguratorScreen(),
                     ),
                   );
                 },
