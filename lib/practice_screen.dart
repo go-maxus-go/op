@@ -409,6 +409,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
           ],
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings & Stats',
+            onPressed: _showStatsBottomSheet,
+          ),
+        ],
       ),
       body: GestureDetector(
         onTap: () {
@@ -427,8 +434,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildCompactStats(),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: 300,
@@ -585,62 +591,55 @@ class _PracticeScreenState extends State<PracticeScreen> {
     );
   }
 
-  Widget _buildCompactStats() {
-    final vpip = _totalHands > 0 ? (_vpipCount / _totalHands * 100) : 0.0;
-    final pfr = _totalHands > 0 ? (_pfrCount / _totalHands * 100) : 0.0;
-    final accuracy = _totalHands > 0 ? (_correctHands / _totalHands * 100) : 0.0;
+  void _showStatsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final vpip = _totalHands > 0 ? (_vpipCount / _totalHands * 100) : 0.0;
+            final pfr = _totalHands > 0 ? (_pfrCount / _totalHands * 100) : 0.0;
+            final accuracy = _totalHands > 0 ? (_correctHands / _totalHands * 100) : 0.0;
 
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildCompactStatItem('Hands', '$_totalHands'),
-                  const SizedBox(width: 16),
-                  _buildCompactStatItem('Accuracy', '${accuracy.toStringAsFixed(0)}%'),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildCompactStatItem('VPIP', '${vpip.toStringAsFixed(1)}%'),
-                  const SizedBox(width: 16),
-                  _buildCompactStatItem('PFR', '${pfr.toStringAsFixed(1)}%'),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(width: 24),
-          Column(
-            children: [
-              const Text(
-                'Auto\nAdvance',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-              Transform.scale(
-                scale: 0.7,
-                child: Switch(
-                  value: _autoAdvance,
-                  onChanged: (val) => setState(() => _autoAdvance = val),
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Practice Stats & Settings',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildCompactStatItem('Hands', '$_totalHands'),
+                        _buildCompactStatItem('Accuracy', '${accuracy.toStringAsFixed(0)}%'),
+                        _buildCompactStatItem('VPIP', '${vpip.toStringAsFixed(1)}%'),
+                        _buildCompactStatItem('PFR', '${pfr.toStringAsFixed(1)}%'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text('Auto Advance'),
+                      subtitle: const Text('Deal next hand immediately upon correct answer'),
+                      value: _autoAdvance,
+                      onChanged: (val) {
+                        setState(() => _autoAdvance = val);
+                        setModalState(() => _autoAdvance = val);
+                      },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
