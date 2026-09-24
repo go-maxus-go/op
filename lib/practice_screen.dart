@@ -54,9 +54,28 @@ class _PracticeScreenState extends State<PracticeScreen> {
   int _vpipCount = 0;
   int _pfrCount = 0;
 
+  YamlMap? _yamlDoc;
+  late String _currentPosition;
+  List<String> _positionCycle = [];
+  int _positionIndex = 0;
+
   @override
   void initState() {
     super.initState();
+    if (widget.position == 'All') {
+      _positionCycle = [
+        if (widget.chart != 'OPR') 'BB',
+        'SB',
+        'BTN',
+        'CO',
+        'HJ',
+        'UTG',
+      ];
+      _positionIndex = 0;
+      _currentPosition = _positionCycle[_positionIndex];
+    } else {
+      _currentPosition = widget.position;
+    }
     _loadChart();
   }
 
@@ -71,6 +90,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
   }
 
   void _dealHand() {
+    if (widget.position == 'All' && _yamlDoc != null && _card1 != null) {
+      _positionIndex = (_positionIndex + 1) % _positionCycle.length;
+      _currentPosition = _positionCycle[_positionIndex];
+      _parseChartForPosition();
+    }
+
     _initDeck();
     _deck.shuffle(Random());
     _card1 = _deck[0];
@@ -100,60 +125,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
         '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
     try {
       final yamlString = await rootBundle.loadString('assets/charts/$fileName');
-      final yamlDoc = loadYaml(yamlString);
-
-      Map<String, Map<String, int>> newWeights = {};
-      Set<String> newUniqueActions = {};
-
-      if (yamlDoc is YamlMap && yamlDoc.containsKey(widget.position)) {
-        final handsList = yamlDoc[widget.position];
-        if (handsList is YamlList) {
-          for (var item in handsList) {
-            if (item is YamlMap) {
-              final handString = item.keys.first.toString();
-              final actions = item[handString];
-
-              Map<String, int> currentHandWeights = {};
-
-              if (actions is YamlList) {
-                for (var actionItem in actions) {
-                  if (actionItem is YamlMap) {
-                    final actionName = actionItem.keys.first.toString();
-                    newUniqueActions.add(actionName);
-                    final weight =
-                        int.tryParse(actionItem[actionName].toString()) ?? 0;
-                    if (weight > 0) {
-                      currentHandWeights[actionName] = weight;
-                    }
-                  }
-                }
-              }
-
-              final parsedHands = RangeParser.parseHandRange(handString);
-              for (var hand in parsedHands) {
-                if (!newWeights.containsKey(hand)) {
-                  newWeights[hand] = {};
-                }
-                currentHandWeights.forEach((action, weight) {
-                  newWeights[hand]![action] =
-                      (newWeights[hand]![action] ?? 0) + weight;
-                });
-              }
-            }
-          }
-        }
-      }
-
+      _yamlDoc = loadYaml(yamlString);
+      
+      _parseChartForPosition();
+      
+      _dealHand();
+      
       setState(() {
-        _handActionWeights = newWeights;
-        _uniqueActions = newUniqueActions;
-        // Ensure "Fold" is always an option if the chart is sparse
-        if (!_uniqueActions.any((a) => a.toLowerCase().contains('fold'))) {
-          _uniqueActions.add('Fold');
-        }
         _isLoading = false;
         _hasError = false;
-        _dealHand();
       });
     } catch (e) {
       debugPrint('Error loading chart: $e');
@@ -161,6 +141,58 @@ class _PracticeScreenState extends State<PracticeScreen> {
         _isLoading = false;
         _hasError = true;
       });
+    }
+  }
+
+  void _parseChartForPosition() {
+    if (_yamlDoc == null) return;
+    
+    Map<String, Map<String, int>> newWeights = {};
+    Set<String> newUniqueActions = {};
+
+    if (_yamlDoc is YamlMap && _yamlDoc!.containsKey(_currentPosition)) {
+      final handsList = _yamlDoc![_currentPosition];
+      if (handsList is YamlList) {
+        for (var item in handsList) {
+          if (item is YamlMap) {
+            final handString = item.keys.first.toString();
+            final actions = item[handString];
+
+            Map<String, int> currentHandWeights = {};
+
+            if (actions is YamlList) {
+              for (var actionItem in actions) {
+                if (actionItem is YamlMap) {
+                  final actionName = actionItem.keys.first.toString();
+                  newUniqueActions.add(actionName);
+                  final weight =
+                      int.tryParse(actionItem[actionName].toString()) ?? 0;
+                  if (weight > 0) {
+                    currentHandWeights[actionName] = weight;
+                  }
+                }
+              }
+            }
+
+            final parsedHands = RangeParser.parseHandRange(handString);
+            for (var hand in parsedHands) {
+              if (!newWeights.containsKey(hand)) {
+                newWeights[hand] = {};
+              }
+              currentHandWeights.forEach((action, weight) {
+                newWeights[hand]![action] =
+                    (newWeights[hand]![action] ?? 0) + weight;
+              });
+            }
+          }
+        }
+      }
+    }
+
+    _handActionWeights = newWeights;
+    _uniqueActions = newUniqueActions;
+    if (!_uniqueActions.any((a) => a.toLowerCase().contains('fold'))) {
+      _uniqueActions.add('Fold');
     }
   }
 
@@ -307,7 +339,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Practice: ${widget.position}'),
+            Text('Practice: $_currentPosition'),
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.bar_chart, size: 24),
@@ -321,7 +353,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       limit: widget.limit,
                       stacks: widget.stacks,
                       raise: widget.raise,
-                      position: widget.position,
+                      position: _currentPosition,
                       chart: widget.chart,
                     ),
                   ),

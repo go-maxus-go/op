@@ -67,6 +67,19 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSection(
+              'Mode',
+              ['Chart', 'Practice'],
+              _selectedMode,
+              (val) {
+                setState(() {
+                  _selectedMode = val;
+                  if (_selectedMode == 'Chart' && _selectedPosition == 'All') {
+                    _selectedPosition = PokerConstants.positionUTG;
+                  }
+                });
+              },
+            ),
+            _buildSection(
               'Type',
               [PokerConstants.type6max],
               PokerConstants.type6max,
@@ -112,6 +125,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
             _buildSection(
               'Position',
               [
+                if (_selectedMode == 'Practice') 'All',
                 PokerConstants.positionUTG,
                 PokerConstants.positionHJ,
                 PokerConstants.positionCO,
@@ -122,12 +136,6 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
               ],
               _selectedPosition,
               (val) => setState(() => _selectedPosition = val),
-            ),
-            _buildSection(
-              'Mode',
-              ['Chart', 'Practice'],
-              _selectedMode,
-              (val) => setState(() => _selectedMode = val),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
