@@ -428,16 +428,19 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildCompactStats(),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.45,
-                child: PokerTableView(
-                  heroPosition: _currentPosition,
-                  chartType: widget.chart,
-                  playerHands: _playerHands,
-                ),
-              ),
-              const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: 300,
+                        maxHeight: max(300, MediaQuery.of(context).size.height * 0.45),
+                      ),
+                      child: PokerTableView(
+                        heroPosition: _currentPosition,
+                        chartType: widget.chart,
+                        playerHands: _playerHands,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
