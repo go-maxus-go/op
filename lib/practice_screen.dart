@@ -52,6 +52,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   bool _hasAnswered = false;
   String? _selectedAction;
   bool _autoAdvance = true;
+  bool _displayInDollars = false;
   bool _isProcessing = false;
   bool _isHintVisible = false;
   Rect? _hintButtonRect;
@@ -545,6 +546,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       child: PokerTableView(
                         heroPosition: _currentPosition,
                         chartType: widget.chart,
+                        raise: widget.raise,
+                        limit: widget.limit,
+                        displayInDollars: _displayInDollars,
                         playerHands: _playerHands,
                       ),
                     ),
@@ -733,6 +737,16 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       onChanged: (val) {
                         setState(() => _autoAdvance = val);
                         setModalState(() => _autoAdvance = val);
+                      },
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      title: const Text('Display in Dollars'),
+                      subtitle: const Text('Show bets in \$ instead of bb'),
+                      value: _displayInDollars,
+                      onChanged: (val) {
+                        setState(() => _displayInDollars = val);
+                        setModalState(() => _displayInDollars = val);
                       },
                     ),
                   ],

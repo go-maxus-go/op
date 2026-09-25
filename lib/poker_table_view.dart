@@ -5,12 +5,18 @@ import 'practice_screen.dart';
 class PokerTableView extends StatelessWidget {
   final String heroPosition;
   final String chartType;
+  final String raise;
+  final String limit;
+  final bool displayInDollars;
   final Map<String, List<PlayingCard>> playerHands;
 
   const PokerTableView({
     super.key,
     required this.heroPosition,
     required this.chartType,
+    required this.raise,
+    required this.limit,
+    required this.displayInDollars,
     required this.playerHands,
   });
 
@@ -28,6 +34,20 @@ class PokerTableView extends StatelessWidget {
     } else {
       return posIdx < heroIdx - 1;
     }
+  }
+
+  String? _getBetAmount(String pos) {
+    if (chartType.startsWith('vs_') && chartType.endsWith('_opr')) {
+      String raiserPos = chartType.split('_')[1].toUpperCase();
+      if (pos == raiserPos) {
+        return raise.replaceAll('bb', '');
+      }
+    }
+
+    if (pos == 'SB') return '0.5';
+    if (pos == 'BB') return '1.0';
+    
+    return null;
   }
 
   @override
@@ -61,12 +81,75 @@ class PokerTableView extends StatelessWidget {
                 ],
               ),
             ),
+            // Bets
+            ..._buildBets(width, height),
             // Players
             ..._buildPlayers(width, height),
           ],
         );
       },
     );
+  }
+
+  List<Widget> _buildBets(double width, double height) {
+    const order = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN'];
+    int heroIdx = order.indexOf(heroPosition);
+    List<Widget> widgets = [];
+
+    // Bet position radius (closer to the player seat)
+    double radiusX = width * 0.30;
+    double radiusY = height * 0.28;
+
+    double getBbFactor() {
+      if (limit.toUpperCase() == 'NL50') return 0.5;
+      if (limit.toUpperCase() == 'NL200') return 2.0;
+      return 1.0;
+    }
+
+    for (int i = 0; i < 6; i++) {
+      String pos = order[(heroIdx + i) % 6];
+      String? amountStr = _getBetAmount(pos);
+      if (amountStr == null) continue;
+
+      double amountBb = double.tryParse(amountStr) ?? 0.0;
+      String displayAmount;
+      if (displayInDollars) {
+        double amountDollars = amountBb * getBbFactor();
+        displayAmount = '${amountDollars.toStringAsFixed(amountDollars.truncateToDouble() == amountDollars ? 0 : 2)}\$';
+      } else {
+        displayAmount = '${amountBb.toStringAsFixed(amountBb.truncateToDouble() == amountBb ? 0 : 1)}bb';
+      }
+
+      double angle = (90 + i * 60) * pi / 180;
+      double x = cos(angle) * radiusX;
+      double y = sin(angle) * radiusY;
+
+      widgets.add(
+        Align(
+          alignment: Alignment(
+            x / (width / 2),
+            y / (height / 2),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.yellow.shade700, width: 1),
+            ),
+            child: Text(
+              displayAmount,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return widgets;
   }
 
   List<Widget> _buildPlayers(double width, double height) {
