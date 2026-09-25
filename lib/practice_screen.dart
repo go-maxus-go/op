@@ -62,6 +62,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
   int _pfrCount = 0;
 
   YamlMap? _yamlDoc;
+  YamlMap? _raiserYamlDoc;
+  Map<String, Map<String, int>> _raiserHandWeights = {};
+  String? _raiserPosition;
   late String _currentPosition;
   List<String> _positionCycle = [];
   int _positionIndex = 0;
@@ -69,15 +72,25 @@ class _PracticeScreenState extends State<PracticeScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.chart.startsWith('vs_') && widget.chart.endsWith('_opr')) {
+      _raiserPosition = widget.chart.split('_')[1].toUpperCase();
+    }
+
     if (widget.position == 'All') {
-      _positionCycle = [
-        if (widget.chart != 'OPR') 'BB',
-        'SB',
-        'BTN',
-        'CO',
-        'HJ',
-        'UTG',
-      ];
+      if (_raiserPosition != null) {
+        final allPos = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+        final oppIndex = allPos.indexOf(_raiserPosition!);
+        _positionCycle = allPos.sublist(oppIndex + 1);
+      } else {
+        _positionCycle = [
+          if (widget.chart != 'OPR') 'BB',
+          'SB',
+          'BTN',
+          'CO',
+          'HJ',
+          'UTG',
+        ];
+      }
       _positionIndex = 0;
       _currentPosition = _positionCycle[_positionIndex];
     } else {
@@ -96,6 +109,35 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
   }
 
+  bool _simulateRaiser(List<PlayingCard> cards) {
+    if (_raiserPosition == null || _raiserHandWeights.isEmpty) return true;
+
+    int i1 = RangeParser.rankIndex(cards[0].rank);
+    int i2 = RangeParser.rankIndex(cards[1].rank);
+
+    String handStr;
+    if (i1 == i2) {
+      handStr = '${cards[0].rank}${cards[1].rank}';
+    } else if (i1 > i2) {
+      handStr = '${cards[0].rank}${cards[1].rank}${cards[0].suit == cards[1].suit ? "s" : "o"}';
+    } else {
+      handStr = '${cards[1].rank}${cards[0].rank}${cards[0].suit == cards[1].suit ? "s" : "o"}';
+    }
+
+    final weights = _raiserHandWeights[handStr] ?? {};
+    if (weights.isEmpty) return false;
+
+    int foldWeight = weights.entries
+        .where((e) => e.key.toLowerCase().contains('fold'))
+        .fold(0, (sum, e) => sum + e.value);
+    
+    int raiseWeight = 100 - foldWeight;
+    if (raiseWeight <= 0) return false;
+
+    int rng = Random().nextInt(100) + 1;
+    return rng <= raiseWeight;
+  }
+
   void _dealHand() {
     if (widget.position == 'All' && _yamlDoc != null && _card1 != null) {
       _positionIndex = (_positionIndex + 1) % _positionCycle.length;
@@ -103,22 +145,30 @@ class _PracticeScreenState extends State<PracticeScreen> {
       _parseChartForPosition();
     }
 
-    _initDeck();
-    _deck.shuffle(Random());
-    _card1 = _deck[0];
-    _card2 = _deck[1];
-    _currentRng = Random().nextInt(100) + 1;
+    while (true) {
+      _initDeck();
+      _deck.shuffle(Random());
 
-    _playerHands.clear();
-    int deckIndex = 2;
-    for (var pos in ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN']) {
-      if (pos == _currentPosition) {
-        _playerHands[pos] = [_deck[0], _deck[1]];
-      } else {
+      _playerHands.clear();
+      int deckIndex = 0;
+      for (var pos in ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN']) {
         _playerHands[pos] = [_deck[deckIndex], _deck[deckIndex + 1]];
         deckIndex += 2;
       }
+
+      if (_raiserPosition != null) {
+        final raiserCards = _playerHands[_raiserPosition!];
+        if (raiserCards != null && !_simulateRaiser(raiserCards)) {
+          continue;
+        }
+      }
+
+      _card1 = _playerHands[_currentPosition]![0];
+      _card2 = _playerHands[_currentPosition]![1];
+      break;
     }
+
+    _currentRng = Random().nextInt(100) + 1;
 
     int i1 = RangeParser.rankIndex(_card1!.rank);
     int i2 = RangeParser.rankIndex(_card2!.rank);
@@ -146,6 +196,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
       final yamlString = await rootBundle.loadString('assets/charts/$fileName');
       _yamlDoc = loadYaml(yamlString);
       
+      if (_raiserPosition != null) {
+        final raiserFileName =
+            '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_opr.yaml';
+        final raiserYamlString = await rootBundle.loadString('assets/charts/$raiserFileName');
+        _raiserYamlDoc = loadYaml(raiserYamlString);
+        _parseRaiserChart();
+      }
+
       _parseChartForPosition();
       
       _dealHand();
@@ -161,6 +219,50 @@ class _PracticeScreenState extends State<PracticeScreen> {
         _hasError = true;
       });
     }
+  }
+
+  void _parseRaiserChart() {
+    if (_raiserYamlDoc == null || _raiserPosition == null) return;
+    
+    Map<String, Map<String, int>> newWeights = {};
+
+    if (_raiserYamlDoc is YamlMap && _raiserYamlDoc!.containsKey(_raiserPosition)) {
+      final handsList = _raiserYamlDoc![_raiserPosition];
+      if (handsList is YamlList) {
+        for (var item in handsList) {
+          if (item is YamlMap) {
+            final handString = item.keys.first.toString();
+            final actions = item[handString];
+
+            Map<String, int> currentHandWeights = {};
+            if (actions is YamlList) {
+              for (var actionItem in actions) {
+                if (actionItem is YamlMap) {
+                  final actionName = actionItem.keys.first.toString();
+                  final weight =
+                      int.tryParse(actionItem[actionName].toString()) ?? 0;
+                  if (weight > 0) {
+                    currentHandWeights[actionName] = weight;
+                  }
+                }
+              }
+            }
+
+            final parsedHands = RangeParser.parseHandRange(handString);
+            for (var hand in parsedHands) {
+              if (!newWeights.containsKey(hand)) {
+                newWeights[hand] = {};
+              }
+              currentHandWeights.forEach((action, weight) {
+                newWeights[hand]![action] =
+                    (newWeights[hand]![action] ?? 0) + weight;
+              });
+            }
+          }
+        }
+      }
+    }
+    _raiserHandWeights = newWeights;
   }
 
   void _parseChartForPosition() {

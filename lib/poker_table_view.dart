@@ -21,6 +21,10 @@ class PokerTableView extends StatelessWidget {
 
     if (chartType == 'OPR') {
       return posIdx < heroIdx;
+    } else if (chartType.startsWith('vs_') && chartType.endsWith('_opr')) {
+      String raiserPos = chartType.split('_')[1].toUpperCase();
+      if (pos == raiserPos) return false;
+      return posIdx < heroIdx;
     } else {
       return posIdx < heroIdx - 1;
     }
