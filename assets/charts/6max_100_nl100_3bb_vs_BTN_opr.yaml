@@ -1,0 +1,1361 @@
+config:
+  type: 6max
+  stacks: 100
+  limit: NL100
+  raise: 3bb
+  chart: vsOPR
+  vs: BTN
+SB:
+- AA:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- AKs:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- AQs:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- AJs:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- ATs:
+  - Fold: 0
+  - Call 3.00: 4
+  - Raise to 12.00: 96
+- A9s:
+  - Fold: 0
+  - Call 3.00: 4
+  - Raise to 12.00: 96
+- A8s:
+  - Fold: 0
+  - Call 3.00: 2
+  - Raise to 12.00: 98
+- A7s:
+  - Fold: 25
+  - Call 3.00: 0
+  - Raise to 12.00: 75
+- A6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A5s:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- A4s:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- A3s:
+  - Fold: 97
+  - Call 3.00: 0
+  - Raise to 12.00: 3
+- A2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- AKo:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- KK:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- KQs:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- KJs:
+  - Fold: 0
+  - Call 3.00: 4
+  - Raise to 12.00: 96
+- KTs:
+  - Fold: 0
+  - Call 3.00: 2
+  - Raise to 12.00: 98
+- K9s:
+  - Fold: 18
+  - Call 3.00: 2
+  - Raise to 12.00: 80
+- K8s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K7s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K5s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K4s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- AQo:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- KQo:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- QQ:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- QJs:
+  - Fold: 0
+  - Call 3.00: 2
+  - Raise to 12.00: 98
+- QTs:
+  - Fold: 0
+  - Call 3.00: 2
+  - Raise to 12.00: 98
+- Q9s:
+  - Fold: 66
+  - Call 3.00: 1
+  - Raise to 12.00: 33
+- Q8s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q7s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q5s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q4s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- AJo:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- KJo:
+  - Fold: 21
+  - Call 3.00: 0
+  - Raise to 12.00: 79
+- QJo:
+  - Fold: 90
+  - Call 3.00: 0
+  - Raise to 12.00: 10
+- JJ:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- JTs:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- J9s:
+  - Fold: 76
+  - Call 3.00: 0
+  - Raise to 12.00: 24
+- J8s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J7s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J5s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J4s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- ATo:
+  - Fold: 23
+  - Call 3.00: 0
+  - Raise to 12.00: 77
+- KTo:
+  - Fold: 98
+  - Call 3.00: 0
+  - Raise to 12.00: 2
+- QTo:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- JTo:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- TT:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 12.00: 100
+- T9s:
+  - Fold: 0
+  - Call 3.00: 1
+  - Raise to 12.00: 99
+- T8s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T7s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T5s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T4s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '99':
+  - Fold: 0
+  - Call 3.00: 3
+  - Raise to 12.00: 97
+- 98s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 97s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 96s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 95s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 94s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 93s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 92s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 98o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '88':
+  - Fold: 0
+  - Call 3.00: 4
+  - Raise to 12.00: 96
+- 87s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 86s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 85s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 84s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 83s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 82s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 97o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 87o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '77':
+  - Fold: 0
+  - Call 3.00: 3
+  - Raise to 12.00: 97
+- 76s:
+  - Fold: 90
+  - Call 3.00: 0
+  - Raise to 12.00: 10
+- 75s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 74s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 73s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 72s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 96o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 86o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 76o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '66':
+  - Fold: 55
+  - Call 3.00: 2
+  - Raise to 12.00: 43
+- 65s:
+  - Fold: 66
+  - Call 3.00: 0
+  - Raise to 12.00: 34
+- 64s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 63s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 62s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 95o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 85o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 75o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 65o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '55':
+  - Fold: 90
+  - Call 3.00: 1
+  - Raise to 12.00: 9
+- 54s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 53s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 52s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 94o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 84o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 74o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 64o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 54o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '44':
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 43s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 42s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 93o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 83o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 73o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 63o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 53o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 43o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '33':
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 32s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- A2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- K2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- Q2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- J2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- T2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 92o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 82o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 72o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 62o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 52o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 42o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- 32o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+- '22':
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 12.00: 0
+BB:
+- AA:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- AKs:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- AQs:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- AJs:
+  - Fold: 0
+  - Call 3.00: 5
+  - Raise to 14.00: 95
+- ATs:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- A9s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- A8s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- A7s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- A6s:
+  - Fold: 0
+  - Call 3.00: 93
+  - Raise to 14.00: 7
+- A5s:
+  - Fold: 0
+  - Call 3.00: 29
+  - Raise to 14.00: 71
+- A4s:
+  - Fold: 0
+  - Call 3.00: 65
+  - Raise to 14.00: 35
+- A3s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- A2s:
+  - Fold: 0
+  - Call 3.00: 36
+  - Raise to 14.00: 64
+- AKo:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- KK:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- KQs:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- KJs:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- KTs:
+  - Fold: 0
+  - Call 3.00: 61
+  - Raise to 14.00: 39
+- K9s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- K8s:
+  - Fold: 0
+  - Call 3.00: 95
+  - Raise to 14.00: 5
+- K7s:
+  - Fold: 0
+  - Call 3.00: 83
+  - Raise to 14.00: 17
+- K6s:
+  - Fold: 0
+  - Call 3.00: 45
+  - Raise to 14.00: 55
+- K5s:
+  - Fold: 0
+  - Call 3.00: 63
+  - Raise to 14.00: 37
+- K4s:
+  - Fold: 0
+  - Call 3.00: 60
+  - Raise to 14.00: 40
+- K3s:
+  - Fold: 0
+  - Call 3.00: 49
+  - Raise to 14.00: 51
+- K2s:
+  - Fold: 0
+  - Call 3.00: 70
+  - Raise to 14.00: 30
+- AQo:
+  - Fold: 0
+  - Call 3.00: 6
+  - Raise to 14.00: 94
+- KQo:
+  - Fold: 0
+  - Call 3.00: 60
+  - Raise to 14.00: 40
+- QQ:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- QJs:
+  - Fold: 0
+  - Call 3.00: 86
+  - Raise to 14.00: 14
+- QTs:
+  - Fold: 0
+  - Call 3.00: 49
+  - Raise to 14.00: 51
+- Q9s:
+  - Fold: 0
+  - Call 3.00: 84
+  - Raise to 14.00: 16
+- Q8s:
+  - Fold: 0
+  - Call 3.00: 56
+  - Raise to 14.00: 44
+- Q7s:
+  - Fold: 0
+  - Call 3.00: 56
+  - Raise to 14.00: 44
+- Q6s:
+  - Fold: 0
+  - Call 3.00: 38
+  - Raise to 14.00: 62
+- Q5s:
+  - Fold: 0
+  - Call 3.00: 66
+  - Raise to 14.00: 34
+- Q4s:
+  - Fold: 72
+  - Call 3.00: 7
+  - Raise to 14.00: 21
+- Q3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- AJo:
+  - Fold: 0
+  - Call 3.00: 63
+  - Raise to 14.00: 37
+- KJo:
+  - Fold: 0
+  - Call 3.00: 58
+  - Raise to 14.00: 42
+- QJo:
+  - Fold: 0
+  - Call 3.00: 57
+  - Raise to 14.00: 43
+- JJ:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- JTs:
+  - Fold: 0
+  - Call 3.00: 87
+  - Raise to 14.00: 13
+- J9s:
+  - Fold: 0
+  - Call 3.00: 74
+  - Raise to 14.00: 26
+- J8s:
+  - Fold: 0
+  - Call 3.00: 40
+  - Raise to 14.00: 60
+- J7s:
+  - Fold: 2
+  - Call 3.00: 26
+  - Raise to 14.00: 72
+- J6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J5s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J4s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- ATo:
+  - Fold: 0
+  - Call 3.00: 58
+  - Raise to 14.00: 42
+- KTo:
+  - Fold: 0
+  - Call 3.00: 50
+  - Raise to 14.00: 50
+- QTo:
+  - Fold: 0
+  - Call 3.00: 58
+  - Raise to 14.00: 42
+- JTo:
+  - Fold: 0
+  - Call 3.00: 47
+  - Raise to 14.00: 53
+- TT:
+  - Fold: 0
+  - Call 3.00: 0
+  - Raise to 14.00: 100
+- T9s:
+  - Fold: 0
+  - Call 3.00: 71
+  - Raise to 14.00: 29
+- T8s:
+  - Fold: 0
+  - Call 3.00: 67
+  - Raise to 14.00: 33
+- T7s:
+  - Fold: 0
+  - Call 3.00: 41
+  - Raise to 14.00: 59
+- T6s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T5s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T4s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T3s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T2s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A9o:
+  - Fold: 0
+  - Call 3.00: 63
+  - Raise to 14.00: 37
+- K9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J9o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T9o:
+  - Fold: 85
+  - Call 3.00: 3
+  - Raise to 14.00: 12
+- '99':
+  - Fold: 0
+  - Call 3.00: 28
+  - Raise to 14.00: 72
+- 98s:
+  - Fold: 0
+  - Call 3.00: 74
+  - Raise to 14.00: 26
+- 97s:
+  - Fold: 0
+  - Call 3.00: 69
+  - Raise to 14.00: 31
+- 96s:
+  - Fold: 79
+  - Call 3.00: 18
+  - Raise to 14.00: 3
+- 95s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 94s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 93s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 92s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A8o:
+  - Fold: 0
+  - Call 3.00: 55
+  - Raise to 14.00: 45
+- K8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T8o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 98o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '88':
+  - Fold: 0
+  - Call 3.00: 84
+  - Raise to 14.00: 16
+- 87s:
+  - Fold: 0
+  - Call 3.00: 75
+  - Raise to 14.00: 25
+- 86s:
+  - Fold: 0
+  - Call 3.00: 91
+  - Raise to 14.00: 9
+- 85s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 84s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 83s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 82s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A7o:
+  - Fold: 98
+  - Call 3.00: 0
+  - Raise to 14.00: 2
+- K7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T7o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 97o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 87o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '77':
+  - Fold: 0
+  - Call 3.00: 86
+  - Raise to 14.00: 14
+- 76s:
+  - Fold: 0
+  - Call 3.00: 62
+  - Raise to 14.00: 38
+- 75s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- 74s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 73s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 72s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- K6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T6o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 96o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 86o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 76o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '66':
+  - Fold: 0
+  - Call 3.00: 83
+  - Raise to 14.00: 17
+- 65s:
+  - Fold: 0
+  - Call 3.00: 58
+  - Raise to 14.00: 42
+- 64s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- 63s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 62s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A5o:
+  - Fold: 62
+  - Call 3.00: 0
+  - Raise to 14.00: 38
+- K5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T5o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 95o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 85o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 75o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 65o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '55':
+  - Fold: 0
+  - Call 3.00: 95
+  - Raise to 14.00: 5
+- 54s:
+  - Fold: 0
+  - Call 3.00: 67
+  - Raise to 14.00: 33
+- 53s:
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- 52s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- K4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T4o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 94o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 84o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 74o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 64o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 54o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '44':
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- 43s:
+  - Fold: 58
+  - Call 3.00: 42
+  - Raise to 14.00: 0
+- 42s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- K3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T3o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 93o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 83o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 73o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 63o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 53o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 43o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '33':
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
+- 32s:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- A2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- K2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- Q2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- J2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- T2o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 92o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 82o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 72o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 62o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 52o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 42o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- 32o:
+  - Fold: 100
+  - Call 3.00: 0
+  - Raise to 14.00: 0
+- '22':
+  - Fold: 0
+  - Call 3.00: 100
+  - Raise to 14.00: 0
