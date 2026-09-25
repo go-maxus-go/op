@@ -142,9 +142,23 @@ class _ChartScreenState extends State<ChartScreen> {
     List<Widget> bars = [];
     int totalWeight = 0;
 
-    // Sort actions or just process non-folds first
-    actionWeights.forEach((action, weight) {
-      if (action.toLowerCase().contains('fold') || weight <= 0) return;
+    // Sort actions: Raise/All-in first, then Call, then Fold is handled by the remainder
+    final sortedActions = actionWeights.keys.toList()
+      ..sort((a, b) {
+        int getPriority(String action) {
+          final lower = action.toLowerCase();
+          if (lower.contains('all-in') || lower.contains('shove')) return 0;
+          if (lower.contains('raise')) return 1;
+          if (lower.contains('call')) return 2;
+          if (lower.contains('fold')) return 3;
+          return 4;
+        }
+        return getPriority(a).compareTo(getPriority(b));
+      });
+
+    for (var action in sortedActions) {
+      final weight = actionWeights[action] ?? 0;
+      if (action.toLowerCase().contains('fold') || weight <= 0) continue;
 
       totalWeight += weight;
       bars.add(
@@ -153,7 +167,7 @@ class _ChartScreenState extends State<ChartScreen> {
           child: Container(color: _getColorForAction(action, colors)),
         ),
       );
-    });
+    }
 
     // Fill remainder with Fold color (background)
     int remaining = 100 - totalWeight;
@@ -235,11 +249,20 @@ class _ChartScreenState extends State<ChartScreen> {
   Widget _buildLegend(ChartColors colors) {
     if (_uniqueActions.isEmpty) return const SizedBox.shrink();
 
-    // Sort actions to show Fold last, or consistently order them
+    // Sort actions to show Raise, Call, then Fold
     final sortedActions = _uniqueActions.toList()
       ..sort((a, b) {
-        if (a.toLowerCase().contains('fold')) return 1;
-        if (b.toLowerCase().contains('fold')) return -1;
+        int getWeight(String action) {
+          final l = action.toLowerCase();
+          if (l.contains('raise')) return 0;
+          if (l.contains('call')) return 1;
+          if (l.contains('fold')) return 2;
+          return 3;
+        }
+
+        final wa = getWeight(a);
+        final wb = getWeight(b);
+        if (wa != wb) return wa.compareTo(wb);
         return a.compareTo(b);
       });
 

@@ -23,6 +23,7 @@ class PokerConstants {
 
   // Charts
   static const String chartOPR = 'OPR';
+  static const String chartVsOPR = 'vs OPR';
   static const String chartCall = 'Call';
   static const String chart3bet = '3bet';
   static const String chart4bet = '4bet';

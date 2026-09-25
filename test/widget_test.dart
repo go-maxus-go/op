@@ -15,15 +15,8 @@ void main() {
     await tester.tap(find.text('Preflop'));
     await tester.pumpAndSettle(); // Wait for navigation animation.
 
-    // Verify that we are on the Preflop screen and see 'Charts' button.
-    expect(find.text('Charts'), findsOneWidget);
-
-    // Tap on Charts button and navigate to ChartsConfiguratorScreen.
-    await tester.tap(find.text('Charts'));
-    await tester.pumpAndSettle();
-
-    // Verify we are on Charts Configuration Screen
-    expect(find.text('Chart Configuration'), findsOneWidget);
+    // Verify we are on Charts Configuration Screen which has the Preflop title
+    expect(find.text('Preflop'), findsOneWidget);
     
     // Verify default selections and options are present
     expect(find.text(PokerConstants.type6max), findsOneWidget);

@@ -16,6 +16,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
   String _selectedMode = 'Practice';
   String _selectedLimit = PokerConstants.limitNL100;
   String _selectedPosition = 'All';
+  String _selectedOpponentPosition = PokerConstants.positionUTG;
   String _selectedChart = PokerConstants.chartOPR;
 
   Widget _buildSection(
@@ -109,6 +110,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
               'Charts',
               [
                 PokerConstants.chartOPR,
+                PokerConstants.chartVsOPR,
                 PokerConstants.chartCall,
                 PokerConstants.chart3bet,
                 PokerConstants.chart4bet,
@@ -121,21 +123,83 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                       _selectedPosition == PokerConstants.positionBB) {
                     _selectedPosition = PokerConstants.positionSB;
                   }
+                  if (_selectedChart == PokerConstants.chartVsOPR) {
+                    final allPos = [
+                      PokerConstants.positionUTG,
+                      PokerConstants.positionHJ,
+                      PokerConstants.positionCO,
+                      PokerConstants.positionBTN,
+                      PokerConstants.positionSB,
+                      PokerConstants.positionBB,
+                    ];
+                    final oppIndex = allPos.indexOf(_selectedOpponentPosition);
+                    final heroPosIndex = allPos.indexOf(_selectedPosition);
+                    if (_selectedPosition != 'All' && heroPosIndex <= oppIndex) {
+                      _selectedPosition = allPos[oppIndex + 1];
+                    }
+                  }
                 });
               },
             ),
+            if (_selectedChart == PokerConstants.chartVsOPR)
+              _buildSection(
+                'Raiser',
+                [
+                  PokerConstants.positionUTG,
+                  PokerConstants.positionHJ,
+                  PokerConstants.positionCO,
+                  PokerConstants.positionBTN,
+                  PokerConstants.positionSB,
+                ],
+                _selectedOpponentPosition,
+                (val) {
+                  setState(() {
+                    _selectedOpponentPosition = val;
+                    final allPos = [
+                      PokerConstants.positionUTG,
+                      PokerConstants.positionHJ,
+                      PokerConstants.positionCO,
+                      PokerConstants.positionBTN,
+                      PokerConstants.positionSB,
+                      PokerConstants.positionBB,
+                    ];
+                    final oppIndex = allPos.indexOf(_selectedOpponentPosition);
+                    final heroPosIndex = allPos.indexOf(_selectedPosition);
+                    if (_selectedPosition != 'All' && heroPosIndex <= oppIndex) {
+                      _selectedPosition = allPos[oppIndex + 1];
+                    }
+                  });
+                },
+              ),
             _buildSection(
               'Position',
-              [
-                if (_selectedMode == 'Practice') 'All',
-                PokerConstants.positionUTG,
-                PokerConstants.positionHJ,
-                PokerConstants.positionCO,
-                PokerConstants.positionBTN,
-                PokerConstants.positionSB,
-                if (_selectedChart != PokerConstants.chartOPR)
+              () {
+                final allPos = [
+                  PokerConstants.positionUTG,
+                  PokerConstants.positionHJ,
+                  PokerConstants.positionCO,
+                  PokerConstants.positionBTN,
+                  PokerConstants.positionSB,
                   PokerConstants.positionBB,
-              ],
+                ];
+                if (_selectedChart == PokerConstants.chartVsOPR) {
+                  final oppIndex = allPos.indexOf(_selectedOpponentPosition);
+                  return [
+                    if (_selectedMode == 'Practice') 'All',
+                    ...allPos.sublist(oppIndex + 1),
+                  ];
+                }
+                return [
+                  if (_selectedMode == 'Practice') 'All',
+                  PokerConstants.positionUTG,
+                  PokerConstants.positionHJ,
+                  PokerConstants.positionCO,
+                  PokerConstants.positionBTN,
+                  PokerConstants.positionSB,
+                  if (_selectedChart != PokerConstants.chartOPR)
+                    PokerConstants.positionBB,
+                ];
+              }(),
               _selectedPosition,
               (val) => setState(() => _selectedPosition = val),
             ),
@@ -146,6 +210,10 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                 textStyle: const TextStyle(fontSize: 20),
               ),
               onPressed: () {
+                final chartToPass = _selectedChart == PokerConstants.chartVsOPR
+                    ? 'vs_${_selectedOpponentPosition}_opr'
+                    : _selectedChart;
+                    
                 if (_selectedMode == 'Practice') {
                   Navigator.push(
                     context,
@@ -156,7 +224,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                         stacks: PokerConstants.stacks100,
                         raise: PokerConstants.raise3bb,
                         position: _selectedPosition,
-                        chart: _selectedChart,
+                        chart: chartToPass,
                       ),
                     ),
                   );
@@ -170,7 +238,7 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                         stacks: PokerConstants.stacks100,
                         raise: PokerConstants.raise3bb,
                         position: _selectedPosition,
-                        chart: _selectedChart,
+                        chart: chartToPass,
                       ),
                     ),
                   );
