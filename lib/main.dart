@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'charts_configurator_screen.dart';
+import 'equity_screen.dart';
 import 'theme.dart';
 
 void main() {
@@ -89,6 +90,22 @@ class MainMenuScreen extends StatelessWidget {
                   );
                 },
                 child: const Text('Preflop'),
+              ),
+              const SizedBox(height: 16.0),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 24.0),
+                  textStyle: const TextStyle(fontSize: 24),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EquityScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Equity'),
               ),
             ],
           ),
