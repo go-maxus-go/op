@@ -31,8 +31,7 @@ class BoardTarget extends SelectionTarget {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is BoardTarget && index == other.index;
+      identical(this, other) || other is BoardTarget && index == other.index;
 
   @override
   int get hashCode => index.hashCode;
@@ -56,10 +55,7 @@ class HandTarget extends SelectionTarget {
 
 class _EquityScreenState extends State<EquityScreen> {
   List<Card?> _board = List.filled(5, null);
-  final List<EquityHand> _hands = [
-    EquityHand(),
-    EquityHand(),
-  ];
+  final List<EquityHand> _hands = [EquityHand(), EquityHand()];
 
   SelectionTarget? _currentSelection;
 
@@ -133,7 +129,10 @@ class _EquityScreenState extends State<EquityScreen> {
         if (target.handIndex == index) {
           _currentSelection = null;
         } else if (target.handIndex > index) {
-          _currentSelection = HandTarget(target.handIndex - 1, target.cardIndex);
+          _currentSelection = HandTarget(
+            target.handIndex - 1,
+            target.cardIndex,
+          );
         }
       }
     });
@@ -165,7 +164,9 @@ class _EquityScreenState extends State<EquityScreen> {
             width: width,
             height: height,
             decoration: BoxDecoration(
-              color: isSelected ? Colors.blue.withValues(alpha: 0.2) : Colors.transparent,
+              color: isSelected
+                  ? Colors.blue.withValues(alpha: 0.2)
+                  : Colors.transparent,
               border: Border.all(
                 color: isSelected ? Colors.blue : Colors.grey,
                 width: isSelected ? 3 : 1,
@@ -178,7 +179,10 @@ class _EquityScreenState extends State<EquityScreen> {
           ),
           if (label != null) ...[
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
           ],
         ],
       ),
@@ -191,8 +195,10 @@ class _EquityScreenState extends State<EquityScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Board',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Board',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -236,17 +242,7 @@ class _EquityScreenState extends State<EquityScreen> {
                   Expanded(
                     child: Builder(
                       builder: (context) {
-                        int combos = 0;
-                        for (String h in hand.range) {
-                          if (h.endsWith('s')) {
-                            combos += 4;
-                          } else if (h.endsWith('o')) {
-                            combos += 12;
-                          } else {
-                            combos += 6;
-                          }
-                        }
-                        double percentage = (combos / 1326) * 100;
+                        double percentage = (hand.range.length / 1326) * 100;
                         return Text(
                           'Range: ${percentage.toStringAsFixed(2)}%',
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -255,9 +251,15 @@ class _EquityScreenState extends State<EquityScreen> {
                     ),
                   )
                 else ...[
-                  _buildCardSlot(card: hand.cards[0], target: HandTarget(index, 0)),
+                  _buildCardSlot(
+                    card: hand.cards[0],
+                    target: HandTarget(index, 0),
+                  ),
                   const SizedBox(width: 4),
-                  _buildCardSlot(card: hand.cards[1], target: HandTarget(index, 1)),
+                  _buildCardSlot(
+                    card: hand.cards[1],
+                    target: HandTarget(index, 1),
+                  ),
                 ],
                 const SizedBox(width: 8),
                 TextButton(
@@ -265,15 +267,21 @@ class _EquityScreenState extends State<EquityScreen> {
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => RangeSelectorScreen(initialRange: hand.range),
+                        builder: (context) =>
+                            RangeSelectorScreen(initialRange: hand.range),
                       ),
                     );
                     if (result != null && result is Set<String>) {
                       setState(() {
                         hand.range = result;
                         if (result.isNotEmpty) {
-                          hand.cards = [null, null]; // Clear specific cards if range is selected
-                          if (_currentSelection is HandTarget && (_currentSelection as HandTarget).handIndex == index) {
+                          hand.cards = [
+                            null,
+                            null,
+                          ]; // Clear specific cards if range is selected
+                          if (_currentSelection is HandTarget &&
+                              (_currentSelection as HandTarget).handIndex ==
+                                  index) {
                             _currentSelection = null;
                           }
                         }
@@ -349,26 +357,37 @@ class _EquityScreenState extends State<EquityScreen> {
     }
 
     return GestureDetector(
-      onTap: () {}, // Consume tap to prevent background GestureDetector from hiding keyboard
+      onTap:
+          () {}, // Consume tap to prevent background GestureDetector from hiding keyboard
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 650),
           child: Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.only(bottom: 16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: IconButton(
+                      constraints: const BoxConstraints(
+                        maxHeight: 32,
+                        maxWidth: 32,
+                      ),
+                      padding: EdgeInsets.zero,
                       onPressed: () => _onCardSelectedFromKeyboard(null),
-                      icon: const Icon(Icons.backspace, color: Colors.grey),
+                      icon: const Icon(
+                        Icons.backspace,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
                       tooltip: 'Clear Slot',
-                    ),                  ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
                 ...rows,
               ],
             ),
@@ -399,38 +418,44 @@ class _EquityScreenState extends State<EquityScreen> {
           ),
         ],
       ),
-      body: GestureDetector(
-        onTap: () {
-          setState(() {
-            _currentSelection = null;
-          });
-        },
-        behavior: HitTestBehavior.translucent,
-        child: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    _buildBoard(),
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Hands',
+      body: SafeArea(
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _currentSelection = null;
+            });
+          },
+          behavior: HitTestBehavior.translucent,
+          child: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      _buildBoard(),
+                      const Divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Hands',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    _buildHands(),
-                  ],
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      _buildHands(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            _buildKeyboard(),
-          ],
+              _buildKeyboard(),
+            ],
+          ),
         ),
       ),
     );

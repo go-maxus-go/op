@@ -7,6 +7,9 @@ class ChartColors extends ThemeExtension<ChartColors> {
   final Color raiseColor;
   final Color allInColor;
   final Color defaultColor;
+  final Color pairColor;
+  final Color suitedColor;
+  final Color offsuitColor;
 
   const ChartColors({
     required this.foldColor,
@@ -14,6 +17,9 @@ class ChartColors extends ThemeExtension<ChartColors> {
     required this.raiseColor,
     required this.allInColor,
     required this.defaultColor,
+    required this.pairColor,
+    required this.suitedColor,
+    required this.offsuitColor,
   });
 
   @override
@@ -23,6 +29,9 @@ class ChartColors extends ThemeExtension<ChartColors> {
     Color? raiseColor,
     Color? allInColor,
     Color? defaultColor,
+    Color? pairColor,
+    Color? suitedColor,
+    Color? offsuitColor,
   }) {
     return ChartColors(
       foldColor: foldColor ?? this.foldColor,
@@ -30,6 +39,9 @@ class ChartColors extends ThemeExtension<ChartColors> {
       raiseColor: raiseColor ?? this.raiseColor,
       allInColor: allInColor ?? this.allInColor,
       defaultColor: defaultColor ?? this.defaultColor,
+      pairColor: pairColor ?? this.pairColor,
+      suitedColor: suitedColor ?? this.suitedColor,
+      offsuitColor: offsuitColor ?? this.offsuitColor,
     );
   }
 
@@ -44,6 +56,9 @@ class ChartColors extends ThemeExtension<ChartColors> {
       raiseColor: Color.lerp(raiseColor, other.raiseColor, t)!,
       allInColor: Color.lerp(allInColor, other.allInColor, t)!,
       defaultColor: Color.lerp(defaultColor, other.defaultColor, t)!,
+      pairColor: Color.lerp(pairColor, other.pairColor, t)!,
+      suitedColor: Color.lerp(suitedColor, other.suitedColor, t)!,
+      offsuitColor: Color.lerp(offsuitColor, other.offsuitColor, t)!,
     );
   }
 }
@@ -65,6 +80,9 @@ class AppTheme {
     raiseColor: Colors.red.shade400,
     allInColor: Colors.blue.shade400,
     defaultColor: Colors.orange.shade400,
+    pairColor: Colors.amber.shade400,
+    suitedColor: Colors.green.shade400,
+    offsuitColor: Colors.purple.shade400,
   );
 
   static final ChartColors darkChartColors = ChartColors(
@@ -73,5 +91,8 @@ class AppTheme {
     raiseColor: Colors.red,
     allInColor: Colors.blue,
     defaultColor: Colors.orange,
+    pairColor: Colors.amber.shade800,
+    suitedColor: Colors.green.shade800,
+    offsuitColor: Colors.purple.shade800,
   );
 }
