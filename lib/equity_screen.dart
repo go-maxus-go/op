@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart' hide Card;
 import 'card.dart';
 import 'deck.dart';
+import 'range_selector_screen.dart';
+
+class EquityHand {
+  List<Card?> cards = [null, null];
+  Set<String> range = {};
+}
 
 class EquityScreen extends StatefulWidget {
   const EquityScreen({super.key});
@@ -50,9 +56,9 @@ class HandTarget extends SelectionTarget {
 
 class _EquityScreenState extends State<EquityScreen> {
   List<Card?> _board = List.filled(5, null);
-  final List<List<Card?>> _hands = [
-    [null, null],
-    [null, null],
+  final List<EquityHand> _hands = [
+    EquityHand(),
+    EquityHand(),
   ];
 
   SelectionTarget? _currentSelection;
@@ -63,7 +69,7 @@ class _EquityScreenState extends State<EquityScreen> {
       if (card != null) set.add(card);
     }
     for (var hand in _hands) {
-      for (var card in hand) {
+      for (var card in hand.cards) {
         if (card != null) set.add(card);
       }
     }
@@ -91,7 +97,7 @@ class _EquityScreenState extends State<EquityScreen> {
           }
         }
       } else if (target is HandTarget) {
-        _hands[target.handIndex][target.cardIndex] = card;
+        _hands[target.handIndex].cards[target.cardIndex] = card;
         if (card != null) {
           // Auto-advance logic
           if (target.cardIndex == 0) {
@@ -115,7 +121,7 @@ class _EquityScreenState extends State<EquityScreen> {
 
   void _addHand() {
     setState(() {
-      _hands.add([null, null]);
+      _hands.add(EquityHand());
     });
   }
 
@@ -226,10 +232,57 @@ class _EquityScreenState extends State<EquityScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
               children: [
-                _buildCardSlot(card: hand[0], target: HandTarget(index, 0)),
-                const SizedBox(width: 4),
-                _buildCardSlot(card: hand[1], target: HandTarget(index, 1)),
-                const SizedBox(width: 16),
+                if (hand.range.isNotEmpty)
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        int combos = 0;
+                        for (String h in hand.range) {
+                          if (h.endsWith('s')) {
+                            combos += 4;
+                          } else if (h.endsWith('o')) {
+                            combos += 12;
+                          } else {
+                            combos += 6;
+                          }
+                        }
+                        double percentage = (combos / 1326) * 100;
+                        return Text(
+                          'Range: ${percentage.toStringAsFixed(2)}%',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        );
+                      },
+                    ),
+                  )
+                else ...[
+                  _buildCardSlot(card: hand.cards[0], target: HandTarget(index, 0)),
+                  const SizedBox(width: 4),
+                  _buildCardSlot(card: hand.cards[1], target: HandTarget(index, 1)),
+                ],
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RangeSelectorScreen(initialRange: hand.range),
+                      ),
+                    );
+                    if (result != null && result is Set<String>) {
+                      setState(() {
+                        hand.range = result;
+                        if (result.isNotEmpty) {
+                          hand.cards = [null, null]; // Clear specific cards if range is selected
+                          if (_currentSelection is HandTarget && (_currentSelection as HandTarget).handIndex == index) {
+                            _currentSelection = null;
+                          }
+                        }
+                      });
+                    }
+                  },
+                  child: const Text('Range'),
+                ),
+                const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     'Equity: --%',
@@ -337,7 +390,7 @@ class _EquityScreenState extends State<EquityScreen> {
               setState(() {
                 _board = List.filled(5, null);
                 for (int i = 0; i < _hands.length; i++) {
-                  _hands[i] = [null, null];
+                  _hands[i] = EquityHand();
                 }
                 _currentSelection = null;
               });
