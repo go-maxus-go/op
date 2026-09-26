@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'dart:math';
-import 'practice_screen.dart';
+import 'card.dart';
 
 class PokerTableView extends StatelessWidget {
   final String heroPosition;
@@ -8,7 +8,7 @@ class PokerTableView extends StatelessWidget {
   final String raise;
   final String limit;
   final bool displayInDollars;
-  final Map<String, List<PlayingCard>> playerHands;
+  final Map<String, List<Card>> playerHands;
 
   const PokerTableView({
     super.key,
@@ -57,8 +57,8 @@ class PokerTableView extends StatelessWidget {
         final double width = constraints.maxWidth;
         final double height = constraints.maxHeight;
         
-        // Ellipse dimensions
-        final double tableWidth = width * 0.7;
+        // Ellipse dimensions - large enough, but leaves room for players outside
+        final double tableWidth = width * 0.75;
         final double tableHeight = height * 0.65;
 
         return Stack(
@@ -81,24 +81,26 @@ class PokerTableView extends StatelessWidget {
                 ],
               ),
             ),
-            // Bets
-            ..._buildBets(width, height),
-            // Players
-            ..._buildPlayers(width, height),
+            // Players and Bets
+            ..._buildPlayersAndBets(width, height),
           ],
         );
       },
     );
   }
 
-  List<Widget> _buildBets(double width, double height) {
+  List<Widget> _buildPlayersAndBets(double width, double height) {
     const order = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN'];
     int heroIdx = order.indexOf(heroPosition);
     List<Widget> widgets = [];
 
-    // Bet position radius (closer to the player seat)
-    double radiusX = width * 0.30;
-    double radiusY = height * 0.28;
+    // Player position radius (just outside the table edge)
+    double playerRadiusX = width * 0.45;
+    double playerRadiusY = height * 0.42;
+    
+    // Bet position radius (fixed distance to the table center)
+    const double betRadiusX = 75.0;
+    const double betRadiusY = 65.0;
 
     double getBbFactor() {
       if (limit.toUpperCase() == 'NL50') return 0.5;
@@ -108,77 +110,19 @@ class PokerTableView extends StatelessWidget {
 
     for (int i = 0; i < 6; i++) {
       String pos = order[(heroIdx + i) % 6];
-      String? amountStr = _getBetAmount(pos);
-      if (amountStr == null) continue;
-
-      double amountBb = double.tryParse(amountStr) ?? 0.0;
-      String displayAmount;
-      if (displayInDollars) {
-        double amountDollars = amountBb * getBbFactor();
-        displayAmount = '${amountDollars.toStringAsFixed(amountDollars.truncateToDouble() == amountDollars ? 0 : 2)}\$';
-      } else {
-        displayAmount = '${amountBb.toStringAsFixed(amountBb.truncateToDouble() == amountBb ? 0 : 1)}bb';
-      }
-
-      double angle = (90 + i * 60) * pi / 180;
-      double x = cos(angle) * radiusX;
-      double y = sin(angle) * radiusY;
-
-      widgets.add(
-        Align(
-          alignment: Alignment(
-            x / (width / 2),
-            y / (height / 2),
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.yellow.shade700, width: 1),
-            ),
-            child: Text(
-              displayAmount,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    return widgets;
-  }
-
-  List<Widget> _buildPlayers(double width, double height) {
-    const order = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN'];
-    int heroIdx = order.indexOf(heroPosition);
-    List<Widget> widgets = [];
-
-    // Player position radius (slightly outside the table)
-    double radiusX = width * 0.42;
-    double radiusY = height * 0.38;
-
-    for (int i = 0; i < 6; i++) {
-      String pos = order[(heroIdx + i) % 6];
-      // Angles: 90, 150, 210, 270, 330, 30 (in degrees)
       double angle = (90 + i * 60) * pi / 180;
       
-      // Calculate position
-      double x = cos(angle) * radiusX;
-      double y = sin(angle) * radiusY;
+      // Calculate Player Seat position
+      double px = cos(angle) * playerRadiusX;
+      double py = sin(angle) * playerRadiusY;
 
       bool isHero = i == 0;
       bool folded = _hasFolded(pos);
 
+      // Add Player Seat
       widgets.add(
         Align(
-          alignment: Alignment(
-            x / (width / 2),
-            y / (height / 2),
-          ),
+          alignment: Alignment(px / (width / 2), py / (height / 2)),
           child: _PlayerSeat(
             position: pos,
             isHero: isHero,
@@ -187,6 +131,44 @@ class PokerTableView extends StatelessWidget {
           ),
         ),
       );
+
+      // Calculate and Add Bet if applicable
+      String? amountStr = _getBetAmount(pos);
+      if (amountStr != null) {
+        double amountBb = double.tryParse(amountStr) ?? 0.0;
+        String displayAmount;
+        if (displayInDollars) {
+          double amountDollars = amountBb * getBbFactor();
+          displayAmount = '${amountDollars.toStringAsFixed(amountDollars.truncateToDouble() == amountDollars ? 0 : 2)}\$';
+        } else {
+          displayAmount = '${amountBb.toStringAsFixed(amountBb.truncateToDouble() == amountBb ? 0 : 1)}bb';
+        }
+
+        double bx = cos(angle) * betRadiusX;
+        double by = sin(angle) * betRadiusY;
+
+        widgets.add(
+          Align(
+            alignment: Alignment(bx / (width / 2), by / (height / 2)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.yellow.shade700, width: 1),
+              ),
+              child: Text(
+                displayAmount,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
     }
     return widgets;
   }
@@ -196,7 +178,7 @@ class _PlayerSeat extends StatelessWidget {
   final String position;
   final bool isHero;
   final bool folded;
-  final List<PlayingCard>? cards;
+  final List<Card>? cards;
 
   const _PlayerSeat({
     required this.position,
@@ -260,7 +242,7 @@ class _PlayerSeat extends StatelessWidget {
     );
   }
 
-  Widget _buildCard(PlayingCard card, bool isHero) {
+  Widget _buildCard(Card card, bool isHero) {
     double width = isHero ? 45 : 30;
     double height = isHero ? 65 : 45;
     

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import 'dart:math';
@@ -6,6 +6,8 @@ import 'utils/range_parser.dart';
 import 'chart_screen.dart';
 import 'poker_table_view.dart';
 import 'action_popup.dart';
+import 'card.dart';
+import 'deck.dart';
 
 class PracticeScreen extends StatefulWidget {
   final String type;
@@ -29,24 +31,17 @@ class PracticeScreen extends StatefulWidget {
   State<PracticeScreen> createState() => _PracticeScreenState();
 }
 
-class PlayingCard {
-  final String rank;
-  final String suit;
-  PlayingCard(this.rank, this.suit);
-  String get assetPath => 'assets/deck/card_$rank$suit.png';
-}
-
 class _PracticeScreenState extends State<PracticeScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   Map<String, Map<String, int>> _handActionWeights = {};
   Set<String> _uniqueActions = {};
 
-  List<PlayingCard> _deck = [];
-  PlayingCard? _card1;
-  PlayingCard? _card2;
+  Deck? _deck;
+  Card? _card1;
+  Card? _card2;
   String? _currentHand;
-  final Map<String, List<PlayingCard>> _playerHands = {};
+  final Map<String, List<Card>> _playerHands = {};
   int _currentRng = 50;
 
   bool _hasAnswered = false;
@@ -100,29 +95,19 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _loadChart();
   }
 
-  void _initDeck() {
-    const suits = ['c', 'd', 'h', 's'];
-    _deck = [];
-    for (var r in RangeParser.ranks) {
-      for (var s in suits) {
-        _deck.add(PlayingCard(r, s));
-      }
-    }
-  }
-
-  bool _simulateRaiser(List<PlayingCard> cards) {
+  bool _simulateRaiser(List<Card> cards) {
     if (_raiserPosition == null || _raiserHandWeights.isEmpty) return true;
 
-    int i1 = RangeParser.rankIndex(cards[0].rank);
-    int i2 = RangeParser.rankIndex(cards[1].rank);
+    int i1 = RangeParser.rankIndex(cards[0].value);
+    int i2 = RangeParser.rankIndex(cards[1].value);
 
     String handStr;
     if (i1 == i2) {
-      handStr = '${cards[0].rank}${cards[1].rank}';
+      handStr = '${cards[0].value}${cards[1].value}';
     } else if (i1 > i2) {
-      handStr = '${cards[0].rank}${cards[1].rank}${cards[0].suit == cards[1].suit ? "s" : "o"}';
+      handStr = '${cards[0].value}${cards[1].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
     } else {
-      handStr = '${cards[1].rank}${cards[0].rank}${cards[0].suit == cards[1].suit ? "s" : "o"}';
+      handStr = '${cards[1].value}${cards[0].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
     }
 
     final weights = _raiserHandWeights[handStr] ?? {};
@@ -147,14 +132,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
 
     while (true) {
-      _initDeck();
-      _deck.shuffle(Random());
+      _deck = Deck();
 
       _playerHands.clear();
-      int deckIndex = 0;
       for (var pos in ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN']) {
-        _playerHands[pos] = [_deck[deckIndex], _deck[deckIndex + 1]];
-        deckIndex += 2;
+        _playerHands[pos] = [_deck!.nextCard(), _deck!.nextCard()];
       }
 
       if (_raiserPosition != null) {
@@ -171,17 +153,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     _currentRng = Random().nextInt(100) + 1;
 
-    int i1 = RangeParser.rankIndex(_card1!.rank);
-    int i2 = RangeParser.rankIndex(_card2!.rank);
+    int i1 = RangeParser.rankIndex(_card1!.value);
+    int i2 = RangeParser.rankIndex(_card2!.value);
 
     if (i1 == i2) {
-      _currentHand = '${_card1!.rank}${_card2!.rank}';
+      _currentHand = '${_card1!.value}${_card2!.value}';
     } else if (i1 > i2) {
       _currentHand =
-          '${_card1!.rank}${_card2!.rank}${_card1!.suit == _card2!.suit ? "s" : "o"}';
+          '${_card1!.value}${_card2!.value}${_card1!.suit == _card2!.suit ? "s" : "o"}';
     } else {
       _currentHand =
-          '${_card2!.rank}${_card1!.rank}${_card1!.suit == _card2!.suit ? "s" : "o"}';
+          '${_card2!.value}${_card1!.value}${_card1!.suit == _card2!.suit ? "s" : "o"}';
     }
 
     _hasAnswered = false;
@@ -533,11 +515,56 @@ class _PracticeScreenState extends State<PracticeScreen> {
           children: [
             SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)?.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)!,
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            'RNG: $_currentRng',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Builder(
+                          builder: (buttonContext) {
+                            return IconButton(
+                              icon: const Icon(Icons.lightbulb_outline, size: 32),
+                              color: Colors.amber,
+                              tooltip: 'Show Hint',
+                              onPressed: _hasAnswered
+                                  ? null
+                                  : () {
+                                      final RenderBox box = buttonContext.findRenderObject() as RenderBox;
+                                      final position = box.localToGlobal(Offset.zero);
+                                      setState(() {
+                                        _hintButtonRect = position & box.size;
+                                        _isHintVisible = !_isHintVisible;
+                                      });
+                                    },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: 300,
@@ -552,80 +579,37 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         playerHands: _playerHands,
                       ),
                     ),
-                    const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)?.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)!,
-                        width: 2,
-                      ),
-                    ),
-                    child: Text(
-                      'RNG: $_currentRng',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Builder(
-                    builder: (buttonContext) {
-                      return IconButton(
-                        icon: const Icon(Icons.lightbulb_outline, size: 32),
-                        color: Colors.amber,
-                        tooltip: 'Show Hint',
-                        onPressed: _hasAnswered
-                            ? null
-                            : () {
-                                final RenderBox box = buttonContext.findRenderObject() as RenderBox;
-                                final position = box.localToGlobal(Offset.zero);
-                                setState(() {
-                                  _hintButtonRect = position & box.size;
-                                  _isHintVisible = !_isHintVisible;
-                                });
-                              },
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
               if (!_hasAnswered) ...[
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  alignment: WrapAlignment.center,
+                Row(
                   children: sortedActions.map((action) {
                     final color = getButtonColor(action);
-                    return ElevatedButton(
-                      onPressed: _isProcessing ? null : () => _onActionSelected(action),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: color,
-                        foregroundColor: Colors.white,
-                        fixedSize: const Size(160, 80),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        textStyle: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            action,
-                            textAlign: TextAlign.center,
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: ElevatedButton(
+                          onPressed: _isProcessing ? null : () => _onActionSelected(action),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: color,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 60),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            textStyle: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                action,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
                         ),
                       ),
