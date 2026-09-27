@@ -59,6 +59,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/6max_100_nl100_3bb_opr.yaml
     - assets/charts/
     - assets/deck/
 

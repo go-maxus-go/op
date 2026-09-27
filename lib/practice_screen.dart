@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import 'dart:math';
-import 'utils/range_parser.dart';
+import 'utils/chart_parser.dart';
 import 'chart_screen.dart';
 import 'poker_table_view.dart';
 import 'action_popup.dart';
@@ -34,8 +34,11 @@ class PracticeScreen extends StatefulWidget {
 class _PracticeScreenState extends State<PracticeScreen> {
   bool _isLoading = true;
   bool _hasError = false;
-  Map<String, Map<String, int>> _handActionWeights = {};
-  Set<String> _uniqueActions = {};
+  PositionChart _chart = const PositionChart(
+    comboActions: {},
+    uniqueActions: {PositionChart.foldLabel},
+  );
+  Set<String> get _uniqueActions => _chart.uniqueActions;
 
   Deck? _deck;
   Card? _card1;
@@ -59,7 +62,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   YamlMap? _yamlDoc;
   YamlMap? _raiserYamlDoc;
-  Map<String, Map<String, int>> _raiserHandWeights = {};
+  PositionChart? _raiserChart;
   String? _raiserPosition;
   late String _currentPosition;
   List<String> _positionCycle = [];
@@ -96,34 +99,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
   }
 
   bool _simulateRaiser(List<Card> cards) {
-    if (_raiserPosition == null || _raiserHandWeights.isEmpty) return true;
-
-    int i1 = Card.ranks.indexOf(cards[0].value);
-    int i2 = Card.ranks.indexOf(cards[1].value);
-
-    String handStr;
-    if (i1 == i2) {
-      handStr = '${cards[0].value}${cards[1].value}';
-    } else if (i1 > i2) {
-      handStr =
-          '${cards[0].value}${cards[1].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
-    } else {
-      handStr =
-          '${cards[1].value}${cards[0].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
-    }
-
-    final weights = _raiserHandWeights[handStr] ?? {};
-    if (weights.isEmpty) return false;
-
-    int foldWeight = weights.entries
-        .where((e) => e.key.toLowerCase().contains('fold'))
-        .fold(0, (sum, e) => sum + e.value);
-
-    int raiseWeight = 100 - foldWeight;
-    if (raiseWeight <= 0) return false;
-
-    int rng = Random().nextInt(100) + 1;
-    return rng <= raiseWeight;
+    if (_raiserPosition == null || _raiserChart == null) return true;
+    final action = _raiserChart!.actionForCards(cards[0], cards[1]);
+    return !action.toLowerCase().contains('fold');
   }
 
   void _dealHand() {
@@ -178,14 +156,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final fileName =
         '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
     try {
-      final yamlString = await rootBundle.loadString('assets/charts/$fileName');
+      final yamlString = await rootBundle.loadString('assets/$fileName');
       _yamlDoc = loadYaml(yamlString);
 
       if (_raiserPosition != null) {
         final raiserFileName =
             '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_opr.yaml';
         final raiserYamlString = await rootBundle.loadString(
-          'assets/charts/$raiserFileName',
+          'assets/$raiserFileName',
         );
         _raiserYamlDoc = loadYaml(raiserYamlString);
         _parseRaiserChart();
@@ -210,127 +188,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   void _parseRaiserChart() {
     if (_raiserYamlDoc == null || _raiserPosition == null) return;
-
-    Map<String, Map<String, int>> newWeights = {};
-
-    if (_raiserYamlDoc is YamlMap &&
-        _raiserYamlDoc!.containsKey(_raiserPosition)) {
-      final handsList = _raiserYamlDoc![_raiserPosition];
-      if (handsList is YamlList) {
-        for (var item in handsList) {
-          if (item is YamlMap) {
-            final handString = item.keys.first.toString();
-            final actions = item[handString];
-
-            Map<String, int> currentHandWeights = {};
-            if (actions is YamlList) {
-              for (var actionItem in actions) {
-                if (actionItem is YamlMap) {
-                  final actionName = actionItem.keys.first.toString();
-                  final weight =
-                      int.tryParse(actionItem[actionName].toString()) ?? 0;
-                  if (weight > 0) {
-                    currentHandWeights[actionName] = weight;
-                  }
-                }
-              }
-            }
-
-            final parsedHands = RangeParser.parseHandRange(handString);
-            for (var hand in parsedHands) {
-              if (!newWeights.containsKey(hand)) {
-                newWeights[hand] = {};
-              }
-              currentHandWeights.forEach((action, weight) {
-                newWeights[hand]![action] =
-                    (newWeights[hand]![action] ?? 0) + weight;
-              });
-            }
-          }
-        }
-      }
-    }
-    _raiserHandWeights = newWeights;
+    _raiserChart = ChartParser.parse(_raiserYamlDoc, _raiserPosition!);
   }
 
   void _parseChartForPosition() {
     if (_yamlDoc == null) return;
-
-    Map<String, Map<String, int>> newWeights = {};
-    Set<String> newUniqueActions = {};
-
-    if (_yamlDoc is YamlMap && _yamlDoc!.containsKey(_currentPosition)) {
-      final handsList = _yamlDoc![_currentPosition];
-      if (handsList is YamlList) {
-        for (var item in handsList) {
-          if (item is YamlMap) {
-            final handString = item.keys.first.toString();
-            final actions = item[handString];
-
-            Map<String, int> currentHandWeights = {};
-
-            if (actions is YamlList) {
-              for (var actionItem in actions) {
-                if (actionItem is YamlMap) {
-                  final actionName = actionItem.keys.first.toString();
-                  newUniqueActions.add(actionName);
-                  final weight =
-                      int.tryParse(actionItem[actionName].toString()) ?? 0;
-                  if (weight > 0) {
-                    currentHandWeights[actionName] = weight;
-                  }
-                }
-              }
-            }
-
-            final parsedHands = RangeParser.parseHandRange(handString);
-            for (var hand in parsedHands) {
-              if (!newWeights.containsKey(hand)) {
-                newWeights[hand] = {};
-              }
-              currentHandWeights.forEach((action, weight) {
-                newWeights[hand]![action] =
-                    (newWeights[hand]![action] ?? 0) + weight;
-              });
-            }
-          }
-        }
-      }
-    }
-
-    _handActionWeights = newWeights;
-    _uniqueActions = newUniqueActions;
-    if (!_uniqueActions.any((a) => a.toLowerCase().contains('fold'))) {
-      _uniqueActions.add('Fold');
-    }
+    _chart = ChartParser.parse(_yamlDoc, _currentPosition);
   }
 
   String? _getCorrectAction() {
-    final weights = _getCurrentHandWeights();
-    if (weights.isEmpty) return null;
-
-    final List<String> evaluationOrder = weights.keys.toList()
-      ..sort((a, b) {
-        int getPriority(String action) {
-          final lower = action.toLowerCase();
-          if (lower.contains('all-in') || lower.contains('shove')) return 0;
-          if (lower.contains('raise')) return 1;
-          if (lower.contains('call')) return 2;
-          if (lower.contains('fold')) return 3;
-          return 4;
-        }
-
-        return getPriority(a).compareTo(getPriority(b));
-      });
-
-    int cumulative = 0;
-    for (String action in evaluationOrder) {
-      cumulative += weights[action] ?? 0;
-      if (_currentRng <= cumulative) {
-        return action;
-      }
-    }
-    return evaluationOrder.last;
+    if (_card1 == null || _card2 == null) return null;
+    return _chart.actionForCards(_card1!, _card2!);
   }
 
   void _onActionSelected(String action) async {
@@ -375,31 +243,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
   }
 
   Map<String, int> _getCurrentHandWeights() {
-    if (_currentHand == null) return {};
-    final weights = _handActionWeights[_currentHand!] ?? {};
-
-    int foldWeight = weights.entries
-        .where((e) => e.key.toLowerCase().contains('fold'))
-        .fold(0, (sum, e) => sum + e.value);
-
-    int nonFoldTotal = 0;
-    weights.forEach((k, v) {
-      if (!k.toLowerCase().contains('fold')) {
-        nonFoldTotal += v;
-      }
-    });
-
-    Map<String, int> fullWeights = Map.from(weights);
-
-    if (foldWeight == 0 && nonFoldTotal < 100) {
-      String foldLabel = _uniqueActions.firstWhere(
-        (a) => a.toLowerCase().contains('fold'),
-        orElse: () => 'Fold',
-      );
-      fullWeights[foldLabel] = 100 - nonFoldTotal;
-    }
-
-    return fullWeights;
+    if (_card1 == null || _card2 == null) return {};
+    final action = _chart.actionForCards(_card1!, _card2!);
+    return {action: 100};
   }
 
   List<MapEntry<String, int>> _getSortedWeightEntries(
@@ -716,8 +562,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
               ActionPopup(
                 cellRect: _hintButtonRect!,
                 hand: _currentHand!,
-                actionWeights: _getCurrentHandWeights(),
-                uniqueActions: _uniqueActions,
+                comboActions: _chart.comboActions,
+                uniqueActions: _chart.uniqueActions,
               ),
           ],
         ),

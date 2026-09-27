@@ -1,17 +1,20 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'theme.dart';
+import 'card.dart';
+import 'utils/chart_parser.dart';
+import 'utils/range_parser.dart';
 
 class ActionPopup extends StatelessWidget {
   final Rect cellRect;
   final String hand;
-  final Map<String, int> actionWeights;
+  final Map<String, String> comboActions;
   final Set<String> uniqueActions;
 
   const ActionPopup({
     super.key,
     required this.cellRect,
     required this.hand,
-    required this.actionWeights,
+    required this.comboActions,
     required this.uniqueActions,
   });
 
@@ -26,27 +29,56 @@ class ActionPopup extends StatelessWidget {
     return colors.defaultColor;
   }
 
+  String _actionForCombo(String combo) {
+    try {
+      return comboActions[RangeParser.normalizeCombo(combo)] ??
+          PositionChart.foldLabel;
+    } catch (_) {
+      return PositionChart.foldLabel;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final chartColors = Theme.of(context).extension<ChartColors>()!;
-    
-    int foldWeight = actionWeights.entries
-        .where((e) => e.key.toLowerCase().contains('fold'))
-        .fold(0, (sum, e) => sum + e.value);
-    int nonFoldTotal = 0;
-    actionWeights.forEach((k, v) {
-      if (!k.toLowerCase().contains('fold')) {
-        nonFoldTotal += v;
+    final comboRows = RangeParser.comboLayoutForHand(hand);
+    final actionCounts = <String, int>{};
+    for (final row in comboRows) {
+      for (final combo in row) {
+        final action = _actionForCombo(combo);
+        actionCounts[action] = (actionCounts[action] ?? 0) + 1;
       }
-    });
-    if (foldWeight == 0 && nonFoldTotal < 100) {
-      foldWeight = 100 - nonFoldTotal;
     }
+    final totalCombos = actionCounts.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
+
+    final actionNames = uniqueActions.toSet();
+    for (final action in actionCounts.keys) {
+      actionNames.add(action);
+    }
+    final sortedActions = actionNames.toList()
+      ..sort((a, b) {
+        int getPriority(String action) {
+          final lower = action.toLowerCase();
+          if (lower.contains('all-in') || lower.contains('shove')) return 0;
+          if (lower.contains('raise')) return 1;
+          if (lower.contains('call')) return 2;
+          if (lower.contains('fold')) return 3;
+          return 4;
+        }
+
+        return getPriority(a).compareTo(getPriority(b));
+      });
 
     final List<Widget> actionRows = [];
-
-    void addActionRow(String action, int weight) {
-      if (weight <= 0) return;
+    for (final action in sortedActions) {
+      final count = actionCounts[action] ?? 0;
+      if (count <= 0 || totalCombos == 0) {
+        continue;
+      }
+      final weight = ((count / totalCombos) * 100).round();
       actionRows.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -76,34 +108,6 @@ class ActionPopup extends StatelessWidget {
       );
     }
 
-    // Define priority-based sorting for all potential actions
-    final List<String> allActionNames = actionWeights.keys.toSet().toList();
-    if (!allActionNames.any((a) => a.toLowerCase().contains('fold'))) {
-      allActionNames.add('Fold');
-    }
-
-    allActionNames.sort((a, b) {
-      int getPriority(String action) {
-        final lower = action.toLowerCase();
-        if (lower.contains('all-in') || lower.contains('shove')) return 0;
-        if (lower.contains('raise')) return 1;
-        if (lower.contains('call')) return 2;
-        if (lower.contains('fold')) return 3;
-        return 4;
-      }
-      return getPriority(a).compareTo(getPriority(b));
-    });
-
-    for (var actionName in allActionNames) {
-      int weight;
-      if (actionName.toLowerCase().contains('fold')) {
-        weight = foldWeight;
-      } else {
-        weight = actionWeights[actionName] ?? 0;
-      }
-      addActionRow(actionName, weight);
-    }
-
     return CustomSingleChildLayout(
       delegate: PopupLayoutDelegate(cellRect, MediaQuery.of(context).size),
       child: Material(
@@ -127,6 +131,50 @@ class ActionPopup extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ...actionRows,
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: comboRows.map((row) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: row.map((combo) {
+                          final action = _actionForCombo(combo);
+                          final isFold = action.toLowerCase().contains('fold');
+                          final c1 = Card(combo[0], combo[1]);
+                          final c2 = Card(combo[2], combo[3]);
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: _getColorForAction(
+                                action,
+                                chartColors,
+                              ).withValues(alpha: isFold ? 0.15 : 0.35),
+                              border: Border.all(
+                                color: _getColorForAction(action, chartColors),
+                                width: isFold ? 1 : 2,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(c1.assetPath, width: 28, height: 39),
+                                const SizedBox(width: 2),
+                                Image.asset(c2.assetPath, width: 28, height: 39),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),

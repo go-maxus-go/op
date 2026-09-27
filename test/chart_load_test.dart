@@ -23,5 +23,13 @@ void main() {
     
     // Check if error is shown
     expect(find.textContaining('not found'), findsNothing);
+    expect(find.text('AA'), findsOneWidget);
+
+    await tester.tap(find.text('77'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hand: 77'), findsOneWidget);
+    expect(find.textContaining('Raise 3bb: 50%'), findsOneWidget);
+    expect(find.byType(Image), findsNWidgets(6));
   });
 }

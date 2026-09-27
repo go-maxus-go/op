@@ -204,6 +204,32 @@ class RangeParser {
     return expandRange(rangeStr).map(normalizeCombo).toSet();
   }
 
+  /// Visual layout of exact combos for a 13x13 grid hand (`AA`, `AKs`, `AKo`).
+  static List<List<String>> comboLayoutForHand(String hand) {
+    if (hand.length == 2) {
+      final r = hand[0];
+      return [
+        ['${r}s${r}h', '${r}s${r}c', '${r}s${r}d'],
+        ['${r}h${r}c', '${r}h${r}d', '${r}c${r}d'],
+      ];
+    } else if (hand.endsWith('s')) {
+      final r1 = hand[0];
+      final r2 = hand[1];
+      return [
+        ['${r1}s${r2}s', '${r1}h${r2}h', '${r1}c${r2}c', '${r1}d${r2}d'],
+      ];
+    } else {
+      final r1 = hand[0];
+      final r2 = hand[1];
+      return [
+        ['${r1}s${r2}h', '${r1}s${r2}c', '${r1}s${r2}d'],
+        ['${r1}h${r2}s', '${r1}h${r2}c', '${r1}h${r2}d'],
+        ['${r1}c${r2}s', '${r1}c${r2}h', '${r1}c${r2}d'],
+        ['${r1}d${r2}s', '${r1}d${r2}h', '${r1}d${r2}c'],
+      ];
+    }
+  }
+
   /// Converts selected combos back to a compact range string (`QQ+`, `AJs+`, `AsKh`).
   static String rangeFromCombos(Iterable<String> comboIterable) {
     final combos = <String>{};

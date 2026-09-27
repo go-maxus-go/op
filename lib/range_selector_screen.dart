@@ -114,31 +114,6 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     }
   }
 
-  List<List<String>> _getComboLayoutForHand(String hand) {
-    if (hand.length == 2) {
-      final r = hand[0];
-      return [
-        ['${r}s${r}h', '${r}s${r}c', '${r}s${r}d'],
-        ['${r}h${r}c', '${r}h${r}d', '${r}c${r}d'],
-      ];
-    } else if (hand.endsWith('s')) {
-      final r1 = hand[0];
-      final r2 = hand[1];
-      return [
-        ['${r1}s${r2}s', '${r1}h${r2}h', '${r1}c${r2}c', '${r1}d${r2}d'],
-      ];
-    } else {
-      final r1 = hand[0];
-      final r2 = hand[1];
-      return [
-        ['${r1}s${r2}h', '${r1}s${r2}c', '${r1}s${r2}d'],
-        ['${r1}h${r2}s', '${r1}h${r2}c', '${r1}h${r2}d'],
-        ['${r1}c${r2}s', '${r1}c${r2}h', '${r1}c${r2}d'],
-        ['${r1}d${r2}s', '${r1}d${r2}h', '${r1}d${r2}c'],
-      ];
-    }
-  }
-
   void _handleDrag(Offset localPosition, double gridSize) {
     final double cellSize = (gridSize - 12) / 13;
     final int col = (localPosition.dx / (cellSize + 1)).floor();
@@ -376,7 +351,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                       const SizedBox(height: 8),
                       Builder(
                         builder: (context) {
-                          final comboRows = _getComboLayoutForHand(
+                          final comboRows = RangeParser.comboLayoutForHand(
                             _activeHand!,
                           );
                           return FittedBox(
