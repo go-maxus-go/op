@@ -98,16 +98,18 @@ class _PracticeScreenState extends State<PracticeScreen> {
   bool _simulateRaiser(List<Card> cards) {
     if (_raiserPosition == null || _raiserHandWeights.isEmpty) return true;
 
-    int i1 = RangeParser.rankIndex(cards[0].value);
-    int i2 = RangeParser.rankIndex(cards[1].value);
+    int i1 = Card.ranks.indexOf(cards[0].value);
+    int i2 = Card.ranks.indexOf(cards[1].value);
 
     String handStr;
     if (i1 == i2) {
       handStr = '${cards[0].value}${cards[1].value}';
     } else if (i1 > i2) {
-      handStr = '${cards[0].value}${cards[1].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
+      handStr =
+          '${cards[0].value}${cards[1].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
     } else {
-      handStr = '${cards[1].value}${cards[0].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
+      handStr =
+          '${cards[1].value}${cards[0].value}${cards[0].suit == cards[1].suit ? "s" : "o"}';
     }
 
     final weights = _raiserHandWeights[handStr] ?? {};
@@ -116,7 +118,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     int foldWeight = weights.entries
         .where((e) => e.key.toLowerCase().contains('fold'))
         .fold(0, (sum, e) => sum + e.value);
-    
+
     int raiseWeight = 100 - foldWeight;
     if (raiseWeight <= 0) return false;
 
@@ -153,8 +155,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     _currentRng = Random().nextInt(100) + 1;
 
-    int i1 = RangeParser.rankIndex(_card1!.value);
-    int i2 = RangeParser.rankIndex(_card2!.value);
+    int i1 = Card.ranks.indexOf(_card1!.value);
+    int i2 = Card.ranks.indexOf(_card2!.value);
 
     if (i1 == i2) {
       _currentHand = '${_card1!.value}${_card2!.value}';
@@ -178,19 +180,21 @@ class _PracticeScreenState extends State<PracticeScreen> {
     try {
       final yamlString = await rootBundle.loadString('assets/charts/$fileName');
       _yamlDoc = loadYaml(yamlString);
-      
+
       if (_raiserPosition != null) {
         final raiserFileName =
             '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_opr.yaml';
-        final raiserYamlString = await rootBundle.loadString('assets/charts/$raiserFileName');
+        final raiserYamlString = await rootBundle.loadString(
+          'assets/charts/$raiserFileName',
+        );
         _raiserYamlDoc = loadYaml(raiserYamlString);
         _parseRaiserChart();
       }
 
       _parseChartForPosition();
-      
+
       _dealHand();
-      
+
       setState(() {
         _isLoading = false;
         _hasError = false;
@@ -206,10 +210,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   void _parseRaiserChart() {
     if (_raiserYamlDoc == null || _raiserPosition == null) return;
-    
+
     Map<String, Map<String, int>> newWeights = {};
 
-    if (_raiserYamlDoc is YamlMap && _raiserYamlDoc!.containsKey(_raiserPosition)) {
+    if (_raiserYamlDoc is YamlMap &&
+        _raiserYamlDoc!.containsKey(_raiserPosition)) {
       final handsList = _raiserYamlDoc![_raiserPosition];
       if (handsList is YamlList) {
         for (var item in handsList) {
@@ -250,7 +255,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   void _parseChartForPosition() {
     if (_yamlDoc == null) return;
-    
+
     Map<String, Map<String, int>> newWeights = {};
     Set<String> newUniqueActions = {};
 
@@ -343,7 +348,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     final lowerAction = action.toLowerCase();
     final isVpip = !lowerAction.contains('fold');
-    final isPfr = lowerAction.contains('raise') ||
+    final isPfr =
+        lowerAction.contains('raise') ||
         lowerAction.contains('all-in') ||
         lowerAction.contains('shove');
 
@@ -396,19 +402,21 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return fullWeights;
   }
 
-  List<MapEntry<String, int>> _getSortedWeightEntries(Map<String, int> weights) {
-    return weights.entries.where((e) => e.value > 0).toList()
-      ..sort((a, b) {
-        int getPriority(String action) {
-          final lower = action.toLowerCase();
-          if (lower.contains('all-in') || lower.contains('shove')) return 0;
-          if (lower.contains('raise')) return 1;
-          if (lower.contains('call')) return 2;
-          if (lower.contains('fold')) return 3;
-          return 4;
-        }
-        return getPriority(a.key).compareTo(getPriority(b.key));
-      });
+  List<MapEntry<String, int>> _getSortedWeightEntries(
+    Map<String, int> weights,
+  ) {
+    return weights.entries.where((e) => e.value > 0).toList()..sort((a, b) {
+      int getPriority(String action) {
+        final lower = action.toLowerCase();
+        if (lower.contains('all-in') || lower.contains('shove')) return 0;
+        if (lower.contains('raise')) return 1;
+        if (lower.contains('call')) return 2;
+        if (lower.contains('fold')) return 3;
+        return 4;
+      }
+
+      return getPriority(a.key).compareTo(getPriority(b.key));
+    });
   }
 
   @override
@@ -515,7 +523,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
           children: [
             SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16.0,
+                  horizontal: 4.0,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -524,12 +535,23 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
-                            color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)?.withValues(alpha: 0.2),
+                            color: Color.lerp(
+                              Colors.red,
+                              Colors.blue,
+                              _currentRng / 100.0,
+                            )?.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0)!,
+                              color: Color.lerp(
+                                Colors.red,
+                                Colors.blue,
+                                _currentRng / 100.0,
+                              )!,
                               width: 2,
                             ),
                           ),
@@ -538,7 +560,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Color.lerp(Colors.red, Colors.blue, _currentRng / 100.0),
+                              color: Color.lerp(
+                                Colors.red,
+                                Colors.blue,
+                                _currentRng / 100.0,
+                              ),
                             ),
                           ),
                         ),
@@ -546,14 +572,21 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         Builder(
                           builder: (buttonContext) {
                             return IconButton(
-                              icon: const Icon(Icons.lightbulb_outline, size: 32),
+                              icon: const Icon(
+                                Icons.lightbulb_outline,
+                                size: 32,
+                              ),
                               color: Colors.amber,
                               tooltip: 'Show Hint',
                               onPressed: _hasAnswered
                                   ? null
                                   : () {
-                                      final RenderBox box = buttonContext.findRenderObject() as RenderBox;
-                                      final position = box.localToGlobal(Offset.zero);
+                                      final RenderBox box =
+                                          buttonContext.findRenderObject()
+                                              as RenderBox;
+                                      final position = box.localToGlobal(
+                                        Offset.zero,
+                                      );
                                       setState(() {
                                         _hintButtonRect = position & box.size;
                                         _isHintVisible = !_isHintVisible;
@@ -568,7 +601,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: 300,
-                        maxHeight: max(300, MediaQuery.of(context).size.height * 0.45),
+                        maxHeight: max(
+                          300,
+                          MediaQuery.of(context).size.height * 0.45,
+                        ),
                       ),
                       child: PokerTableView(
                         heroPosition: _currentPosition,
@@ -580,104 +616,112 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-              if (!_hasAnswered) ...[
-                Row(
-                  children: sortedActions.map((action) {
-                    final color = getButtonColor(action);
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: ElevatedButton(
-                          onPressed: _isProcessing ? null : () => _onActionSelected(action),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: color,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(0, 60),
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                action,
-                                textAlign: TextAlign.center,
+                    if (!_hasAnswered) ...[
+                      Row(
+                        children: sortedActions.map((action) {
+                          final color = getButtonColor(action);
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _isProcessing
+                                    ? null
+                                    : () => _onActionSelected(action),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: color,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(0, 60),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      action,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          );
+                        }).toList(),
+                      ),
+                    ] else ...[
+                      Icon(
+                        isCorrect ? Icons.check_circle : Icons.cancel,
+                        color: isCorrect ? Colors.green : Colors.red,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        isCorrect ? 'Correct!' : 'Should be $correctAction',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isCorrect ? Colors.green : Colors.red,
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ] else ...[
-                Icon(
-                  isCorrect ? Icons.check_circle : Icons.cancel,
-                  color: isCorrect ? Colors.green : Colors.red,
-                  size: 64,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isCorrect ? 'Correct!' : 'Should be $correctAction',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: isCorrect ? Colors.green : Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Hand: $_currentHand',
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 8),
-                // Show probabilities
-                ..._getSortedWeightEntries(weights).map(
-                      (e) => Text(
-                        '${e.key}: ${e.value}%',
+                      const SizedBox(height: 16),
+                      Text(
+                        'Hand: $_currentHand',
                         style: const TextStyle(fontSize: 18),
                       ),
-                    ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _dealHand,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(200, 80),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 48,
-                      vertical: 20,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Next Hand'),
+                      const SizedBox(height: 8),
+                      // Show probabilities
+                      ..._getSortedWeightEntries(weights).map(
+                        (e) => Text(
+                          '${e.key}: ${e.value}%',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: _dealHand,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(200, 80),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 48,
+                            vertical: 20,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Next Hand'),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ],
-          ),
+              ),
+            ),
+            if (_isHintVisible &&
+                _hintButtonRect != null &&
+                _currentHand != null)
+              ActionPopup(
+                cellRect: _hintButtonRect!,
+                hand: _currentHand!,
+                actionWeights: _getCurrentHandWeights(),
+                uniqueActions: _uniqueActions,
+              ),
+          ],
         ),
       ),
-      if (_isHintVisible && _hintButtonRect != null && _currentHand != null)
-        ActionPopup(
-          cellRect: _hintButtonRect!,
-          hand: _currentHand!,
-          actionWeights: _getCurrentHandWeights(),
-          uniqueActions: _uniqueActions,
-        ),
-    ],
-  ),
-),
     );
   }
 
@@ -687,9 +731,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final vpip = _totalHands > 0 ? (_vpipCount / _totalHands * 100) : 0.0;
+            final vpip = _totalHands > 0
+                ? (_vpipCount / _totalHands * 100)
+                : 0.0;
             final pfr = _totalHands > 0 ? (_pfrCount / _totalHands * 100) : 0.0;
-            final accuracy = _totalHands > 0 ? (_correctHands / _totalHands * 100) : 0.0;
+            final accuracy = _totalHands > 0
+                ? (_correctHands / _totalHands * 100)
+                : 0.0;
 
             return SafeArea(
               child: Padding(
@@ -699,16 +747,28 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   children: [
                     const Text(
                       'Practice Stats & Settings',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildCompactStatItem('Hands', '$_totalHands'),
-                        _buildCompactStatItem('Accuracy', '${accuracy.toStringAsFixed(0)}%'),
-                        _buildCompactStatItem('VPIP', '${vpip.toStringAsFixed(1)}%'),
-                        _buildCompactStatItem('PFR', '${pfr.toStringAsFixed(1)}%'),
+                        _buildCompactStatItem(
+                          'Accuracy',
+                          '${accuracy.toStringAsFixed(0)}%',
+                        ),
+                        _buildCompactStatItem(
+                          'VPIP',
+                          '${vpip.toStringAsFixed(1)}%',
+                        ),
+                        _buildCompactStatItem(
+                          'PFR',
+                          '${pfr.toStringAsFixed(1)}%',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -716,7 +776,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     const SizedBox(height: 8),
                     SwitchListTile(
                       title: const Text('Auto Advance'),
-                      subtitle: const Text('Deal next hand immediately upon correct answer'),
+                      subtitle: const Text(
+                        'Deal next hand immediately upon correct answer',
+                      ),
                       value: _autoAdvance,
                       onChanged: (val) {
                         setState(() => _autoAdvance = val);
@@ -747,16 +809,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ],
     );

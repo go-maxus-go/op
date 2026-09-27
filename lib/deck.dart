@@ -6,25 +6,8 @@ class Deck {
   int _currentIndex = 0;
 
   Deck({int? seed}) {
-    const suits = ['s', 'h', 'c', 'd'];
-    const values = [
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-      '7',
-      '8',
-      '9',
-      'T',
-      'J',
-      'Q',
-      'K',
-      'A',
-    ];
-
-    for (var s in suits) {
-      for (var v in values) {
+    for (var s in Card.suits) {
+      for (var v in Card.ranks) {
         _cards.add(Card(v, s));
       }
     }

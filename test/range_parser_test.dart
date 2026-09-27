@@ -1,29 +1,132 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/utils/range_parser.dart';
 
+import 'package:optimal_poker/hand.dart';
+import 'package:optimal_poker/card.dart';
+
 void main() {
-  test('Parses single hands', () {
-    expect(RangeParser.parseHandRange('54s'), ['54s']);
-    expect(RangeParser.parseHandRange('AKo'), ['AKo']);
-    expect(RangeParser.parseHandRange('88'), ['88']);
+  test('Expands a raw hand', () {
+    expect(RangeParser.expandRange('5s4s'), ['5s4s']);
+    expect(RangeParser.expandRange('AhKd'), ['AhKd']);
+    expect(RangeParser.expandRange('8c8h'), ['8c8h']);
   });
 
-  test('Parses pairs with +', () {
-    expect(RangeParser.parseHandRange('QQ+'), ['QQ', 'KK', 'AA']);
-    expect(RangeParser.parseHandRange('22+').length, 13); // All pairs
+  test('Expands a pair', () {
+    expect(RangeParser.expandRange('QQ'), [
+      'QsQh',
+      'QsQc',
+      'QsQd',
+      'QhQc',
+      'QhQd',
+      'QcQd',
+    ]);
   });
 
-  test('Parses consecutive suited with +', () {
-    expect(RangeParser.parseHandRange('JTs+'), ['JTs', 'QJs', 'KQs', 'AKs']);
+  test('Expands a pair plus', () {
+    expect(RangeParser.expandRange('QQ+'), [
+      'AsAh',
+      'AsAc',
+      'AsAd',
+      'AhAc',
+      'AhAd',
+      'AcAd',
+
+      'KsKh',
+      'KsKc',
+      'KsKd',
+      'KhKc',
+      'KhKd',
+      'KcKd',
+
+      'QsQh',
+      'QsQc',
+      'QsQd',
+      'QhQc',
+      'QhQd',
+      'QcQd',
+    ]);
   });
 
-  test('Parses unconnected suited/offsuit with +', () {
-    expect(RangeParser.parseHandRange('AJo+'), ['AJo', 'AQo', 'AKo']);
-    expect(RangeParser.parseHandRange('K9s+'), ['K9s', 'KTs', 'KJs', 'KQs']);
+  test('Expands an offsuit', () {
+    expect(RangeParser.expandRange('AKo'), [
+      'AsKh',
+      'AsKc',
+      'AsKd',
+      'AhKs',
+      'AhKc',
+      'AhKd',
+      'AcKs',
+      'AcKh',
+      'AcKd',
+      'AdKs',
+      'AdKh',
+      'AdKc',
+    ]);
   });
 
-  test('Parses line with multiple hands', () {
-    expect(RangeParser.parseLine('54s, 65s, 76s'), ['54s', '65s', '76s']);
-    expect(RangeParser.parseLine('88+, AJo+'), ['88', '99', 'TT', 'JJ', 'QQ', 'KK', 'AA', 'AJo', 'AQo', 'AKo']);
+  test('Expands an offsuit plus', () {
+    expect(RangeParser.expandRange('QTo+'), [
+      'QsJh',
+      'QsJc',
+      'QsJd',
+      'QhJs',
+      'QhJc',
+      'QhJd',
+      'QcJs',
+      'QcJh',
+      'QcJd',
+      'QdJs',
+      'QdJh',
+      'QdJc',
+
+      'QsTh',
+      'QsTc',
+      'QsTd',
+      'QhTs',
+      'QhTc',
+      'QhTd',
+      'QcTs',
+      'QcTh',
+      'QcTd',
+      'QdTs',
+      'QdTh',
+      'QdTc',
+    ]);
+  });
+
+  test('Expands a suit', () {
+    expect(RangeParser.expandRange('AKs'), ['AsKs', 'AhKh', 'AcKc', 'AdKd']);
+  });
+
+  test('Expands a suit plus', () {
+    expect(RangeParser.expandRange('J8s+'), [
+      'JsTs',
+      'JhTh',
+      'JcTc',
+      'JdTd',
+      'Js9s',
+      'Jh9h',
+      'Jc9c',
+      'Jd9d',
+      'Js8s',
+      'Jh8h',
+      'Jc8c',
+      'Jd8d',
+    ]);
+  });
+
+  test('Range to hands', () {
+    expect(RangeParser.rangeToHands('AKs'), [
+      Hand(Card('A', 's'), Card('K', 's')),
+      Hand(Card('A', 'h'), Card('K', 'h')),
+      Hand(Card('A', 'c'), Card('K', 'c')),
+      Hand(Card('A', 'd'), Card('K', 'd')),
+    ]);
+  });
+
+  test('Parse hand range (collapsed)', () {
+    expect(RangeParser.parseHandRange('QQ+'), ['AA', 'KK', 'QQ']);
+    expect(RangeParser.parseHandRange('AKs, 88'), ['AKs', '88']);
+    expect(RangeParser.parseHandRange('QTo+'), ['QJo', 'QTo']);
   });
 }

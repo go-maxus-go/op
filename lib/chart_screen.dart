@@ -4,6 +4,7 @@ import 'package:yaml/yaml.dart';
 import 'utils/range_parser.dart';
 import 'theme.dart';
 import 'action_popup.dart';
+import 'card.dart' as c;
 
 class ChartScreen extends StatefulWidget {
   final String type;
@@ -112,8 +113,8 @@ class _ChartScreenState extends State<ChartScreen> {
     final r1Index = 12 - row;
     final r2Index = 12 - col;
 
-    final r1 = RangeParser.ranks[r1Index];
-    final r2 = RangeParser.ranks[r2Index];
+    final r1 = c.Card.ranks[r1Index];
+    final r2 = c.Card.ranks[r2Index];
 
     if (row == col) {
       return '$r1$r2';
@@ -153,6 +154,7 @@ class _ChartScreenState extends State<ChartScreen> {
           if (lower.contains('fold')) return 3;
           return 4;
         }
+
         return getPriority(a).compareTo(getPriority(b));
       });
 
@@ -482,7 +484,9 @@ class _ChartScreenState extends State<ChartScreen> {
                           ],
                         ),
                       ),
-                      if (_selectedHand != null && _selectedActionWeights != null && _selectedCellRect != null)
+                      if (_selectedHand != null &&
+                          _selectedActionWeights != null &&
+                          _selectedCellRect != null)
                         ActionPopup(
                           cellRect: _selectedCellRect!,
                           hand: _selectedHand!,

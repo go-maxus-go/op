@@ -28,8 +28,8 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     final r1Index = 12 - row;
     final r2Index = 12 - col;
 
-    final r1 = RangeParser.ranks[r1Index];
-    final r2 = RangeParser.ranks[r2Index];
+    final r1 = Card.ranks[r1Index];
+    final r2 = Card.ranks[r2Index];
 
     if (row == col) {
       return '$r1$r2';
@@ -43,7 +43,14 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
   List<String> _getCombosForHand(String hand) {
     if (hand.length == 2) {
       final r = hand[0];
-      return ['${r}s${r}h', '${r}s${r}c', '${r}s${r}d', '${r}h${r}c', '${r}h${r}d', '${r}c${r}d'];
+      return [
+        '${r}s${r}h',
+        '${r}s${r}c',
+        '${r}s${r}d',
+        '${r}h${r}c',
+        '${r}h${r}d',
+        '${r}c${r}d',
+      ];
     } else if (hand.endsWith('s')) {
       final r1 = hand[0];
       final r2 = hand[1];
@@ -135,7 +142,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
   @override
   Widget build(BuildContext context) {
     final chartColors = Theme.of(context).extension<ChartColors>()!;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Range'),
@@ -168,8 +175,10 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
 
                     return Center(
                       child: Listener(
-                        onPointerDown: (event) => _startDrag(event.localPosition, gridSize),
-                        onPointerMove: (event) => _handleDrag(event.localPosition, gridSize),
+                        onPointerDown: (event) =>
+                            _startDrag(event.localPosition, gridSize),
+                        onPointerMove: (event) =>
+                            _handleDrag(event.localPosition, gridSize),
                         onPointerUp: (event) => _draggedHands.clear(),
                         child: SizedBox(
                           width: gridSize,
@@ -178,20 +187,25 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 13,
-                              childAspectRatio: 1.0,
-                              crossAxisSpacing: 1,
-                              mainAxisSpacing: 1,
-                            ),
+                                  crossAxisCount: 13,
+                                  childAspectRatio: 1.0,
+                                  crossAxisSpacing: 1,
+                                  mainAxisSpacing: 1,
+                                ),
                             itemCount: 13 * 13,
                             itemBuilder: (context, index) {
                               int row = index ~/ 13;
                               int col = index % 13;
                               String hand = _getHandAt(row, col);
                               final combos = _getCombosForHand(hand);
-                              final selectedCount = combos.where((c) => _selectedCombos.contains(c)).length;
-                              final isFullySelected = selectedCount == combos.length;
-                              final isPartiallySelected = selectedCount > 0 && selectedCount < combos.length;
+                              final selectedCount = combos
+                                  .where((c) => _selectedCombos.contains(c))
+                                  .length;
+                              final isFullySelected =
+                                  selectedCount == combos.length;
+                              final isPartiallySelected =
+                                  selectedCount > 0 &&
+                                  selectedCount < combos.length;
                               final isSelected = selectedCount > 0;
 
                               Color selectedColor;
@@ -208,19 +222,36 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                 decoration = BoxDecoration(
                                   color: selectedColor,
                                   borderRadius: BorderRadius.circular(2),
-                                  border: _activeHand == hand ? Border.all(color: Colors.white, width: 2) : null,
+                                  border: _activeHand == hand
+                                      ? Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        )
+                                      : null,
                                 );
                               } else if (isPartiallySelected) {
                                 decoration = BoxDecoration(
                                   color: selectedColor.withValues(alpha: 0.5),
                                   borderRadius: BorderRadius.circular(2),
-                                  border: _activeHand == hand ? Border.all(color: Colors.white, width: 2) : null,
+                                  border: _activeHand == hand
+                                      ? Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        )
+                                      : null,
                                 );
                               } else {
                                 decoration = BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(2),
-                                  border: _activeHand == hand ? Border.all(color: Colors.white, width: 2) : null,
+                                  border: _activeHand == hand
+                                      ? Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        )
+                                      : null,
                                 );
                               }
 
@@ -255,22 +286,33 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                     double percentage = (_selectedCombos.length / 1326) * 100;
                     return Text(
                       'Selected: ${percentage.toStringAsFixed(2)}%',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     );
                   },
                 ),
               ),
               if (_activeHand != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 8.0,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Combinations for $_activeHand', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Combinations for $_activeHand',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 8),
                       Builder(
                         builder: (context) {
-                          final comboRows = _getComboLayoutForHand(_activeHand!);
+                          final comboRows = _getComboLayoutForHand(
+                            _activeHand!,
+                          );
                           return FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Column(
@@ -281,7 +323,8 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: row.map((combo) {
-                                      final isSelected = _selectedCombos.contains(combo);
+                                      final isSelected = _selectedCombos
+                                          .contains(combo);
                                       final c1 = Card(combo[0], combo[1]);
                                       final c2 = Card(combo[2], combo[3]);
 
@@ -296,24 +339,40 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                           });
                                         },
                                         child: Container(
-                                          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 4.0,
+                                          ),
                                           padding: const EdgeInsets.all(4),
                                           decoration: BoxDecoration(
                                             color: isSelected
-                                                ? Colors.blue.withValues(alpha: 0.2)
+                                                ? Colors.blue.withValues(
+                                                    alpha: 0.2,
+                                                  )
                                                 : Colors.transparent,
                                             border: Border.all(
-                                              color: isSelected ? Colors.blue : Colors.grey,
+                                              color: isSelected
+                                                  ? Colors.blue
+                                                  : Colors.grey,
                                               width: isSelected ? 2 : 1,
                                             ),
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Image.asset(c1.assetPath, width: 45, height: 63),
+                                              Image.asset(
+                                                c1.assetPath,
+                                                width: 45,
+                                                height: 63,
+                                              ),
                                               const SizedBox(width: 2),
-                                              Image.asset(c2.assetPath, width: 45, height: 63),
+                                              Image.asset(
+                                                c2.assetPath,
+                                                width: 45,
+                                                height: 63,
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -324,7 +383,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                               }).toList(),
                             ),
                           );
-                        }
+                        },
                       ),
                     ],
                   ),

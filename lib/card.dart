@@ -1,22 +1,22 @@
-const values = [
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  'T',
-  'J',
-  'Q',
-  'K',
-  'A',
-];
-
-const suits = ['s', 'h', 'c', 'd'];
-
 class Card {
+  static const List<String> ranks = [
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    'T',
+    'J',
+    'Q',
+    'K',
+    'A',
+  ];
+
+  static const List<String> suits = ['s', 'h', 'c', 'd'];
+
   final String value;
   final String suit;
 
@@ -49,7 +49,7 @@ class Card {
           suit == other.suit;
 
   @override
-  int get hashCode => value.hashCode ^ suit.hashCode;
+  int get hashCode => Object.hash(value, suit);
 
   @override
   String toString() => '$value$suit';
@@ -57,19 +57,19 @@ class Card {
   bool sameValue(Card card) => value == card.value;
 
   bool operator <(Card card) {
-    return values.indexOf(value) < values.indexOf(card.value);
+    return ranks.indexOf(value) < ranks.indexOf(card.value);
   }
 
   bool operator >(Card card) {
-    return values.indexOf(value) > values.indexOf(card.value);
+    return ranks.indexOf(value) > ranks.indexOf(card.value);
   }
 
   bool operator <=(Card card) {
-    return values.indexOf(value) <= values.indexOf(card.value);
+    return ranks.indexOf(value) <= ranks.indexOf(card.value);
   }
 
   bool operator >=(Card card) {
-    return values.indexOf(value) >= values.indexOf(card.value);
+    return ranks.indexOf(value) >= ranks.indexOf(card.value);
   }
 
   bool sameSuit(Card card) => suit == card.suit;

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/deck.dart';
+import 'package:optimal_poker/card.dart';
 
 void main() {
   group('Deck Tests', () {
@@ -27,25 +28,8 @@ void main() {
 
     test('Deck with seed=0 maintains specific order', () {
       final deck = Deck(seed: 0);
-      const suits = ['s', 'h', 'c', 'd'];
-      const values = [
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'T',
-        'J',
-        'Q',
-        'K',
-        'A',
-      ];
-
-      for (var s in suits) {
-        for (var v in values) {
+      for (var s in Card.suits) {
+        for (var v in Card.ranks) {
           final card = deck.nextCard();
           expect(card.value, v);
           expect(card.suit, s);
