@@ -129,4 +129,35 @@ void main() {
     expect(RangeParser.parseHandRange('AKs, 88'), ['AKs', '88']);
     expect(RangeParser.parseHandRange('QTo+'), ['QJo', 'QTo']);
   });
+
+  test('Range from combos collapses consecutive hands', () {
+    expect(
+      RangeParser.rangeFromCombos(RangeParser.expandRange('QQ+')),
+      'QQ+',
+    );
+    expect(
+      RangeParser.rangeFromCombos(RangeParser.expandRange('AKs, 88')),
+      '88, AKs',
+    );
+    expect(
+      RangeParser.rangeFromCombos(RangeParser.expandRange('QTo+')),
+      'QTo+',
+    );
+    expect(
+      RangeParser.rangeFromCombos(RangeParser.expandRange('J8s+')),
+      'J8s+',
+    );
+  });
+
+  test('Range from combos lists partial combo selections', () {
+    expect(RangeParser.rangeFromCombos(['AhKd']), 'AhKd');
+    expect(RangeParser.rangeFromCombos(['KdAh']), 'AhKd');
+  });
+
+  test('Range from combos does not plus-collapse when a gap exists', () {
+    expect(
+      RangeParser.rangeFromCombos(RangeParser.expandRange('KK, QQ')),
+      'KK, QQ',
+    );
+  });
 }

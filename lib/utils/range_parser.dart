@@ -181,4 +181,138 @@ class RangeParser {
       throw error;
     }
   }
+
+  /// Canonical combo form: higher rank first; pairs use suit order from [Card.suits].
+  static String normalizeCombo(String combo) {
+    validateHandToken(combo);
+    final r1 = combo[0];
+    final s1 = combo[1];
+    final r2 = combo[2];
+    final s2 = combo[3];
+    final rank1 = Card.ranks.indexOf(r1);
+    final rank2 = Card.ranks.indexOf(r2);
+    if (rank1 < rank2) {
+      return '$r2$s2$r1$s1';
+    }
+    if (rank1 == rank2 && Card.suits.indexOf(s1) > Card.suits.indexOf(s2)) {
+      return '$r2$s2$r1$s1';
+    }
+    return combo;
+  }
+
+  static Set<String> expandRangeToComboSet(String rangeStr) {
+    return expandRange(rangeStr).map(normalizeCombo).toSet();
+  }
+
+  /// Converts selected combos back to a compact range string (`QQ+`, `AJs+`, `AsKh`).
+  static String rangeFromCombos(Iterable<String> comboIterable) {
+    final combos = <String>{};
+    for (final combo in comboIterable) {
+      combos.add(normalizeCombo(combo));
+    }
+
+    final ranksHighToLow = Card.ranks.reversed.toList();
+    final tokens = <String>[];
+
+    _flushFullySelectedRun(
+      tokens: tokens,
+      ranksHighToLow: ranksHighToLow,
+      combos: combos,
+      isPair: true,
+      highIndex: 0,
+      suited: false,
+    );
+
+    for (var hi = 0; hi < ranksHighToLow.length; hi++) {
+      _flushFullySelectedRun(
+        tokens: tokens,
+        ranksHighToLow: ranksHighToLow,
+        combos: combos,
+        isPair: false,
+        highIndex: hi,
+        suited: true,
+      );
+      _flushFullySelectedRun(
+        tokens: tokens,
+        ranksHighToLow: ranksHighToLow,
+        combos: combos,
+        isPair: false,
+        highIndex: hi,
+        suited: false,
+      );
+    }
+
+    return tokens.join(', ');
+  }
+
+  static void _flushFullySelectedRun({
+    required List<String> tokens,
+    required List<String> ranksHighToLow,
+    required Set<String> combos,
+    required bool isPair,
+    required int highIndex,
+    required bool suited,
+  }) {
+    int? runStart;
+
+    void flush(int endExclusive) {
+      final startIndex = runStart;
+      if (startIndex == null) {
+        return;
+      }
+      if (isPair) {
+        if (startIndex == 0 && endExclusive - 1 != 0) {
+          final low = ranksHighToLow[endExclusive - 1];
+          tokens.add('$low$low+');
+        } else {
+          for (var i = startIndex; i < endExclusive; i++) {
+            final rank = ranksHighToLow[i];
+            tokens.add('$rank$rank');
+          }
+        }
+      } else {
+        final high = ranksHighToLow[highIndex];
+        final suffix = suited ? 's' : 'o';
+        if (startIndex == highIndex + 1 && endExclusive - 1 != startIndex) {
+          final low = ranksHighToLow[endExclusive - 1];
+          tokens.add('$high$low$suffix+');
+        } else {
+          for (var i = startIndex; i < endExclusive; i++) {
+            tokens.add('$high${ranksHighToLow[i]}$suffix');
+          }
+        }
+      }
+      runStart = null;
+    }
+
+    final start = isPair ? 0 : highIndex + 1;
+    for (var i = start; i < ranksHighToLow.length; i++) {
+      final token = isPair
+          ? '${ranksHighToLow[i]}${ranksHighToLow[i]}'
+          : '${ranksHighToLow[highIndex]}${ranksHighToLow[i]}${suited ? 's' : 'o'}';
+      final handCombos = isPair
+          ? expandPairToken(token)
+          : (suited ? expandSuitToken(token) : expandOffsuitToken(token));
+      var selectedCount = 0;
+      for (final combo in handCombos) {
+        if (combos.contains(combo)) {
+          selectedCount++;
+        }
+      }
+
+      if (selectedCount == handCombos.length) {
+        runStart ??= i;
+      } else {
+        flush(i);
+        if (selectedCount > 0) {
+          for (final combo in handCombos) {
+            if (combos.contains(combo)) {
+              tokens.add(combo);
+            }
+          }
+        }
+      }
+    }
+    flush(ranksHighToLow.length);
+  }
 }

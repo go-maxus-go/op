@@ -17,11 +17,54 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
   bool _isSelecting = true;
   final Set<String> _draggedHands = {};
   String? _activeHand;
+  late final TextEditingController _rangeController;
+  String? _rangeError;
+  bool _ignoreRangeTextChange = false;
 
   @override
   void initState() {
     super.initState();
     _selectedCombos = Set<String>.from(widget.initialRange);
+    _rangeController = TextEditingController(
+      text: RangeParser.rangeFromCombos(_selectedCombos),
+    );
+  }
+
+  @override
+  void dispose() {
+    _rangeController.dispose();
+    super.dispose();
+  }
+
+  void _setRangeTextFromCombos() {
+    final formatted = RangeParser.rangeFromCombos(_selectedCombos);
+    if (_rangeController.text == formatted) {
+      return;
+    }
+    _ignoreRangeTextChange = true;
+    _rangeController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+    _ignoreRangeTextChange = false;
+    _rangeError = null;
+  }
+
+  void _onRangeTextChanged(String value) {
+    if (_ignoreRangeTextChange) {
+      return;
+    }
+    try {
+      final parsed = RangeParser.expandRangeToComboSet(value);
+      setState(() {
+        _selectedCombos = parsed;
+        _rangeError = null;
+      });
+    } catch (_) {
+      setState(() {
+        _rangeError = 'Invalid range';
+      });
+    }
   }
 
   String _getHandAt(int row, int col) {
@@ -113,6 +156,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
           } else {
             _selectedCombos.removeAll(combos);
           }
+          _setRangeTextFromCombos();
         });
       }
     }
@@ -136,6 +180,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     setState(() {
       _selectedCombos.clear();
       _activeHand = null;
+      _setRangeTextFromCombos();
     });
   }
 
@@ -294,6 +339,27 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                   },
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: TextField(
+                  controller: _rangeController,
+                  onChanged: _onRangeTextChanged,
+                  onEditingComplete: () {
+                    setState(_setRangeTextFromCombos);
+                  },
+                  minLines: 1,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'AKs, QQ+, 87s',
+                    labelText: 'Range',
+                    errorText: _rangeError,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
               if (_activeHand != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -336,6 +402,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                             } else {
                                               _selectedCombos.add(combo);
                                             }
+                                            _setRangeTextFromCombos();
                                           });
                                         },
                                         child: Container(
