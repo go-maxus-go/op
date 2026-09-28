@@ -8,6 +8,7 @@ import 'poker_table_view.dart';
 import 'action_popup.dart';
 import 'card.dart';
 import 'deck.dart';
+import 'user_settings.dart';
 
 class PracticeScreen extends StatefulWidget {
   final String type;
@@ -48,9 +49,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   bool _hasAnswered = false;
   String? _selectedAction;
-  bool _autoAdvance = true;
-  bool _displayInDollars = false;
-  bool _showOpponentCards = true;
+  final PracticeSettings _settings = UserSettings.instance.practice;
+  bool get _autoAdvance => _settings.autoAdvance;
+  bool get _displayInDollars => _settings.displayInDollars;
+  bool get _showOpponentCards => _settings.showOpponentCards;
   bool _isProcessing = false;
   bool _isHintVisible = false;
   Rect? _hintButtonRect;
@@ -586,8 +588,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       ),
                       value: _autoAdvance,
                       onChanged: (val) {
-                        setState(() => _autoAdvance = val);
-                        setModalState(() => _autoAdvance = val);
+                        setState(() => _settings.autoAdvance = val);
+                        setModalState(() {});
                       },
                     ),
                     const Divider(),
@@ -596,8 +598,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       subtitle: const Text('Show bets in \$ instead of bb'),
                       value: _displayInDollars,
                       onChanged: (val) {
-                        setState(() => _displayInDollars = val);
-                        setModalState(() => _displayInDollars = val);
+                        setState(() => _settings.displayInDollars = val);
+                        setModalState(() {});
                       },
                     ),
                     const Divider(),
@@ -608,8 +610,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       ),
                       value: _showOpponentCards,
                       onChanged: (val) {
-                        setState(() => _showOpponentCards = val);
-                        setModalState(() => _showOpponentCards = val);
+                        setState(() => _settings.showOpponentCards = val);
+                        setModalState(() {});
                       },
                     ),
                   ],
