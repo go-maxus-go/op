@@ -374,30 +374,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 16),
-                    Builder(
-                      builder: (buttonContext) {
-                        return IconButton(
-                          icon: const Icon(Icons.lightbulb_outline, size: 32),
-                          color: Colors.amber,
-                          tooltip: 'Show Hint',
-                          onPressed: _hasAnswered
-                              ? null
-                              : () {
-                                  final RenderBox box =
-                                      buttonContext.findRenderObject()
-                                          as RenderBox;
-                                  final position = box.localToGlobal(
-                                    Offset.zero,
-                                  );
-                                  setState(() {
-                                    _hintButtonRect = position & box.size;
-                                    _isHintVisible = !_isHintVisible;
-                                  });
-                                },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
                     ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: 300,
@@ -413,6 +389,37 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         limit: widget.limit,
                         displayInDollars: _displayInDollars,
                         playerHands: _playerHands,
+                        heroTrailing: Builder(
+                          builder: (buttonContext) {
+                            return IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 40,
+                                height: 40,
+                              ),
+                              icon: const Icon(
+                                Icons.lightbulb_outline,
+                                size: 28,
+                              ),
+                              color: Colors.amber,
+                              tooltip: 'Show Hint',
+                              onPressed: _hasAnswered
+                                  ? null
+                                  : () {
+                                      final RenderBox box =
+                                          buttonContext.findRenderObject()
+                                              as RenderBox;
+                                      final position = box.localToGlobal(
+                                        Offset.zero,
+                                      );
+                                      setState(() {
+                                        _hintButtonRect = position & box.size;
+                                        _isHintVisible = !_isHintVisible;
+                                      });
+                                    },
+                            );
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),

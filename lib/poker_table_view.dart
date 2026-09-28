@@ -9,6 +9,7 @@ class PokerTableView extends StatelessWidget {
   final String limit;
   final bool displayInDollars;
   final Map<String, List<Card>> playerHands;
+  final Widget? heroTrailing;
 
   const PokerTableView({
     super.key,
@@ -18,6 +19,7 @@ class PokerTableView extends StatelessWidget {
     required this.limit,
     required this.displayInDollars,
     required this.playerHands,
+    this.heroTrailing,
   });
 
   bool _hasFolded(String pos) {
@@ -128,6 +130,7 @@ class PokerTableView extends StatelessWidget {
             isHero: isHero,
             folded: folded,
             cards: playerHands[pos],
+            trailing: isHero ? heroTrailing : null,
           ),
         ),
       );
@@ -179,26 +182,44 @@ class _PlayerSeat extends StatelessWidget {
   final bool isHero;
   final bool folded;
   final List<Card>? cards;
+  final Widget? trailing;
+
+  static const double _trailingGap = 4;
+  static const double _trailingSlot = 40;
 
   const _PlayerSeat({
     required this.position,
     required this.isHero,
     required this.folded,
     this.cards,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showCards = !folded && cards != null && cards!.length == 2;
+    final showTrailing = showCards && trailing != null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (!folded && cards != null && cards!.length == 2)
+        if (showCards)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (showTrailing)
+                const SizedBox(width: _trailingGap + _trailingSlot),
               _buildCard(cards![0], isHero),
               const SizedBox(width: 2),
               _buildCard(cards![1], isHero),
+              if (showTrailing) ...[
+                const SizedBox(width: _trailingGap),
+                SizedBox(
+                  width: _trailingSlot,
+                  height: _trailingSlot,
+                  child: trailing,
+                ),
+              ],
             ],
           )
         else
