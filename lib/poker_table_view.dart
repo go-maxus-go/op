@@ -11,6 +11,11 @@ class PokerTableView extends StatelessWidget {
   final Map<String, List<Card>> playerHands;
   final Widget? heroTrailing;
 
+  /// Space below the table taken by the hero's label, which sits under the
+  /// hand. Parents should add it to the height they give this view.
+  static const double heroExtraHeight =
+      _SeatCards.heroCardHeight / 2 + _TableLayoutDelegate.cardGap + 18;
+
   const PokerTableView({
     super.key,
     required this.heroPosition,
@@ -48,230 +53,432 @@ class PokerTableView extends StatelessWidget {
 
     if (pos == 'SB') return '0.5';
     if (pos == 'BB') return '1.0';
-    
+
     return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double width = constraints.maxWidth;
-        final double height = constraints.maxHeight;
-        
-        // Ellipse dimensions - large enough, but leaves room for players outside
-        final double tableWidth = width * 0.75;
-        final double tableHeight = height * 0.65;
-
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // Table
-            Container(
-              width: tableWidth,
-              height: tableHeight,
-              decoration: BoxDecoration(
-                color: Colors.green.shade800,
-                borderRadius: BorderRadius.circular(1000), // Stadium shape
-                border: Border.all(color: Colors.brown.shade800, width: 8),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black54,
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-            ),
-            // Players and Bets
-            ..._buildPlayersAndBets(width, height),
-          ],
-        );
-      },
-    );
+  double _bbFactor() {
+    if (limit.toUpperCase() == 'NL50') return 0.5;
+    if (limit.toUpperCase() == 'NL200') return 2.0;
+    return 1.0;
   }
 
-  List<Widget> _buildPlayersAndBets(double width, double height) {
+  String _formatBet(String amountStr) {
+    double amountBb = double.tryParse(amountStr) ?? 0.0;
+    if (displayInDollars) {
+      double amountDollars = amountBb * _bbFactor();
+      return '${amountDollars.toStringAsFixed(amountDollars.truncateToDouble() == amountDollars ? 0 : 2)}\$';
+    }
+    return amountBb.toStringAsFixed(amountBb.truncateToDouble() == amountBb ? 0 : 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     const order = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN'];
     int heroIdx = order.indexOf(heroPosition);
-    List<Widget> widgets = [];
 
-    // Player position radius (just outside the table edge)
-    double playerRadiusX = width * 0.45;
-    double playerRadiusY = height * 0.42;
-    
-    // Bet position radius (fixed distance to the table center)
-    const double betRadiusX = 75.0;
-    const double betRadiusY = 65.0;
-
-    double getBbFactor() {
-      if (limit.toUpperCase() == 'NL50') return 0.5;
-      if (limit.toUpperCase() == 'NL200') return 2.0;
-      return 1.0;
-    }
-
-    for (int i = 0; i < 6; i++) {
-      String pos = order[(heroIdx + i) % 6];
-      double angle = (90 + i * 60) * pi / 180;
-      
-      // Calculate Player Seat position
-      double px = cos(angle) * playerRadiusX;
-      double py = sin(angle) * playerRadiusY;
-
-      bool isHero = i == 0;
-      bool folded = _hasFolded(pos);
-
-      // Add Player Seat
-      widgets.add(
-        Align(
-          alignment: Alignment(px / (width / 2), py / (height / 2)),
-          child: _PlayerSeat(
-            position: pos,
-            isHero: isHero,
-            folded: folded,
-            cards: playerHands[pos],
-            trailing: isHero ? heroTrailing : null,
+    final tableLayer = <Widget>[
+      LayoutId(
+        id: _TableLayoutDelegate.tableId,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.green.shade800,
+            borderRadius: BorderRadius.circular(1000), // Stadium shape
+            border: Border.all(
+              color: Colors.brown.shade800,
+              width: _TableLayoutDelegate.borderWidth,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 10,
+                offset: Offset(0, 5),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    ];
+    final betLayer = <Widget>[];
+    final cardLayer = <Widget>[];
+    final labelLayer = <Widget>[];
 
-      // Calculate and Add Bet if applicable
+    for (int i = 0; i < order.length; i++) {
+      String pos = order[(heroIdx + i) % order.length];
+      bool isHero = i == 0;
+      bool folded = _hasFolded(pos);
+      final cards = playerHands[pos];
+
+      labelLayer.add(LayoutId(
+        id: _TableLayoutDelegate.labelId(i),
+        child: _SeatLabel(position: pos, isHero: isHero),
+      ));
+
+      if (!folded && cards != null && cards.length == 2) {
+        cardLayer.add(LayoutId(
+          id: _TableLayoutDelegate.cardsId(i),
+          child: _SeatCards(cards: cards, isHero: isHero),
+        ));
+
+        if (isHero && heroTrailing != null) {
+          labelLayer.add(LayoutId(
+            id: _TableLayoutDelegate.heroTrailingId,
+            child: SizedBox(
+              width: _TableLayoutDelegate.heroTrailingSize,
+              height: _TableLayoutDelegate.heroTrailingSize,
+              child: heroTrailing,
+            ),
+          ));
+        }
+      }
+
       String? amountStr = _getBetAmount(pos);
       if (amountStr != null) {
-        double amountBb = double.tryParse(amountStr) ?? 0.0;
-        String displayAmount;
-        if (displayInDollars) {
-          double amountDollars = amountBb * getBbFactor();
-          displayAmount = '${amountDollars.toStringAsFixed(amountDollars.truncateToDouble() == amountDollars ? 0 : 2)}\$';
-        } else {
-          displayAmount = '${amountBb.toStringAsFixed(amountBb.truncateToDouble() == amountBb ? 0 : 1)}bb';
-        }
-
-        double bx = cos(angle) * betRadiusX;
-        double by = sin(angle) * betRadiusY;
-
-        widgets.add(
-          Align(
-            alignment: Alignment(bx / (width / 2), by / (height / 2)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.yellow.shade700, width: 1),
-              ),
-              child: Text(
-                displayAmount,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        );
+        betLayer.add(LayoutId(
+          id: _TableLayoutDelegate.betId(i),
+          child: _BetChip(text: _formatBet(amountStr)),
+        ));
       }
     }
-    return widgets;
+
+    return CustomMultiChildLayout(
+      delegate: _TableLayoutDelegate(seatCount: order.length),
+      children: [...tableLayer, ...betLayer, ...cardLayer, ...labelLayer],
+    );
   }
 }
 
-class _PlayerSeat extends StatelessWidget {
-  final String position;
-  final bool isHero;
-  final bool folded;
-  final List<Card>? cards;
-  final Widget? trailing;
+/// Sizes the table to the available space and anchors each seat label's
+/// center on the table border, with cards and bets placed towards the felt.
+class _TableLayoutDelegate extends MultiChildLayoutDelegate {
+  final int seatCount;
 
-  static const double _trailingGap = 4;
-  static const double _trailingSlot = 40;
+  _TableLayoutDelegate({required this.seatCount});
 
-  const _PlayerSeat({
-    required this.position,
-    required this.isHero,
-    required this.folded,
-    this.cards,
-    this.trailing,
-  });
+  static const String tableId = 'table';
+  static String labelId(int i) => 'label$i';
+  static String cardsId(int i) => 'cards$i';
+  static String betId(int i) => 'bet$i';
+  static const String heroTrailingId = 'heroTrailing';
+
+  static const double heroTrailingSize = 40;
+  static const double _heroTrailingGap = 4;
+  static const double borderWidth = 8;
+  static const double _outerMargin = 4;
+  static const double cardGap = 2;
+  static const double _betGap = 6;
+
+  @override
+  void performLayout(Size size) {
+    final loose = BoxConstraints.loose(size);
+
+    final labelSizes = <Size>[];
+    double maxHalfH = 0;
+    for (int i = 0; i < seatCount; i++) {
+      final s = layoutChild(labelId(i), loose);
+      labelSizes.add(s);
+      maxHalfH = max(maxHalfH, s.height / 2);
+    }
+
+    // Seats at the top of the table hold their cards above the label.
+    final topMargin = maxHalfH -
+        borderWidth / 2 +
+        cardGap +
+        _SeatCards.villainCardHeight;
+    final bottomMargin =
+        maxHalfH + _outerMargin + PokerTableView.heroExtraHeight;
+    final tableHeight = max(0.0, size.height - topMargin - bottomMargin);
+    final halfH = max(0.0, tableHeight / 2 - borderWidth / 2);
+
+    // Size for the widest seat everywhere so the table doesn't change as
+    // positions rotate.
+    final seatHalfWidth = max(
+          labelSizes.map((s) => s.width).reduce(max),
+          2 * _SeatCards.villainCardWidth + 2,
+        ) /
+        2;
+
+    // Widest table whose seats still fit horizontally.
+    double lo = 0;
+    double hi = max(0.0, size.width / 2 - borderWidth / 2);
+    for (int iter = 0; iter < 24; iter++) {
+      final mid = (lo + hi) / 2;
+      double extent = 0;
+      for (int i = 0; i < seatCount; i++) {
+        final seat = _seatOffset(i, mid, halfH);
+        extent = max(extent, seat.dx.abs() + seatHalfWidth);
+      }
+      if (extent <= size.width / 2 - _outerMargin) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    final halfW = lo;
+
+    final tableSize = Size(2 * halfW + borderWidth, tableHeight);
+    final center = Offset(size.width / 2, topMargin + tableSize.height / 2);
+    layoutChild(tableId, BoxConstraints.tight(tableSize));
+    positionChild(tableId, center - tableSize.center(Offset.zero));
+
+    for (int i = 0; i < seatCount; i++) {
+      final dir = _seatDirection(i, halfW, halfH);
+      final anchor = center + _stadiumEdge(dir, halfW, halfH);
+
+      final isHero = i == 0;
+      final labelSize = labelSizes[i];
+      // The hero's hand is centered on the edge, with the label below it.
+      final labelCenter = isHero
+          ? anchor.translate(
+              0,
+              _SeatCards.heroCardHeight / 2 + cardGap + labelSize.height / 2,
+            )
+          : anchor;
+      final labelRect = Rect.fromCenter(
+        center: labelCenter,
+        width: labelSize.width,
+        height: labelSize.height,
+      );
+      positionChild(labelId(i), labelRect.topLeft);
+
+      Rect seatRect = labelRect;
+      if (hasChild(cardsId(i))) {
+        final cardsSize = layoutChild(cardsId(i), loose);
+        final cardsOffset = Offset(
+          anchor.dx - cardsSize.width / 2,
+          isHero
+              ? anchor.dy - cardsSize.height / 2
+              : labelRect.top - cardGap - cardsSize.height,
+        );
+        positionChild(cardsId(i), cardsOffset);
+        seatRect = seatRect.expandToInclude(cardsOffset & cardsSize);
+      }
+
+      if (i == 0 && hasChild(heroTrailingId)) {
+        final trailingSize = layoutChild(heroTrailingId, loose);
+        final trailingOffset = Offset(
+          labelRect.right + _heroTrailingGap,
+          labelRect.center.dy - trailingSize.height / 2,
+        );
+        positionChild(heroTrailingId, trailingOffset);
+        seatRect = seatRect.expandToInclude(trailingOffset & trailingSize);
+      }
+
+      if (hasChild(betId(i))) {
+        final betSize = layoutChild(betId(i), loose);
+        final towardCenter = -dir;
+        final clearRect = Rect.fromLTRB(
+          seatRect.left - _betGap - betSize.width / 2,
+          seatRect.top - _betGap - betSize.height / 2,
+          seatRect.right + _betGap + betSize.width / 2,
+          seatRect.bottom + _betGap + betSize.height / 2,
+        );
+        double s = (anchor - center).distance;
+        if (towardCenter.dx.abs() > 1e-6) {
+          final edgeX =
+              towardCenter.dx > 0 ? clearRect.right : clearRect.left;
+          s = min(s, (edgeX - anchor.dx) / towardCenter.dx);
+        }
+        if (towardCenter.dy.abs() > 1e-6) {
+          final edgeY =
+              towardCenter.dy > 0 ? clearRect.bottom : clearRect.top;
+          s = min(s, (edgeY - anchor.dy) / towardCenter.dy);
+        }
+        final betCenter = anchor + towardCenter * max(0.0, s);
+        positionChild(
+          betId(i),
+          betCenter - Offset(betSize.width / 2, betSize.height / 2),
+        );
+      }
+    }
+  }
+
+  /// Direction from the table center to seat [i], spread like on an ellipse
+  /// matching the table's proportions.
+  Offset _seatDirection(int i, double halfW, double halfH) {
+    final angle = (90 + i * 360 / seatCount) * pi / 180;
+    return _normalize(Offset(cos(angle) * halfW, sin(angle) * halfH));
+  }
+
+  /// Seat [i]'s position on the border center line, relative to the center.
+  Offset _seatOffset(int i, double halfW, double halfH) =>
+      _stadiumEdge(_seatDirection(i, halfW, halfH), halfW, halfH);
+
+  static Offset _normalize(Offset o) {
+    final d = o.distance;
+    return d == 0 ? const Offset(0, 1) : o / d;
+  }
+
+  /// Point where a ray from the center in direction [dir] (unit vector)
+  /// crosses a stadium with half extents [halfW] x [halfH].
+  static Offset _stadiumEdge(Offset dir, double halfW, double halfH) {
+    final dx = dir.dx.abs();
+    final dy = dir.dy.abs();
+    final r = min(halfW, halfH);
+
+    double t = min(
+      dx > 1e-9 ? halfW / dx : double.infinity,
+      dy > 1e-9 ? halfH / dy : double.infinity,
+    );
+
+    final cx = halfW - r;
+    final cy = halfH - r;
+    if (t * dx > cx && t * dy > cy) {
+      final dot = dx * cx + dy * cy;
+      t = dot + sqrt(max(0.0, dot * dot - (cx * cx + cy * cy) + r * r));
+    }
+    return dir * t;
+  }
+
+  @override
+  bool shouldRelayout(_TableLayoutDelegate oldDelegate) =>
+      oldDelegate.seatCount != seatCount;
+}
+
+class _BetChip extends StatelessWidget {
+  final String text;
+
+  const _BetChip({required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final showCards = !folded && cards != null && cards!.length == 2;
-    final showTrailing = showCards && trailing != null;
+    const shadows = [
+      Shadow(color: Colors.black87, offset: Offset(0, 1.5), blurRadius: 3),
+    ];
+    const baseStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w900,
+      height: 1.1,
+      letterSpacing: 0.3,
+    );
 
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showCards)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (showTrailing)
-                const SizedBox(width: _trailingGap + _trailingSlot),
-              _buildCard(cards![0], isHero),
-              const SizedBox(width: 2),
-              _buildCard(cards![1], isHero),
-              if (showTrailing) ...[
-                const SizedBox(width: _trailingGap),
-                SizedBox(
-                  width: _trailingSlot,
-                  height: _trailingSlot,
-                  child: trailing,
-                ),
-              ],
-            ],
-          )
-        else
-          SizedBox(height: isHero ? 65 : 45), // Placeholder to keep layout stable
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isHero ? Colors.blue.shade700 : Colors.black87,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isHero ? Colors.white : Colors.grey.shade700, width: 2),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                position,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+        const Text('🪙', style: TextStyle(fontSize: 15, shadows: shadows)),
+        const SizedBox(width: 3),
+        Stack(
+          children: [
+            Text(
+              text,
+              style: baseStyle.copyWith(
+                shadows: shadows,
+                foreground: Paint()
+                  ..style = PaintingStyle.stroke
+                  ..strokeWidth = 3
+                  ..strokeJoin = StrokeJoin.round
+                  ..color = Colors.black,
               ),
-              if (position == 'BTN') ...[
-                const SizedBox(width: 4),
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text('D', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ],
-          ),
+            ),
+            Text(
+              text,
+              style: baseStyle.copyWith(color: Colors.white),
+            ),
+          ],
         ),
       ],
     );
   }
+}
 
-  Widget _buildCard(Card card, bool isHero) {
-    double width = isHero ? 45 : 30;
-    double height = isHero ? 65 : 45;
-    
+class _SeatCards extends StatelessWidget {
+  final List<Card> cards;
+  final bool isHero;
+
+  static const double heroCardWidth = 45;
+  static const double heroCardHeight = 65;
+  static const double villainCardWidth = 30;
+  static const double villainCardHeight = 45;
+
+  const _SeatCards({required this.cards, required this.isHero});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildCard(cards[0]),
+        const SizedBox(width: 2),
+        _buildCard(cards[1]),
+      ],
+    );
+  }
+
+  Widget _buildCard(Card card) {
+    double width = isHero ? heroCardWidth : villainCardWidth;
+    double height = isHero ? heroCardHeight : villainCardHeight;
+
     return Image.asset(
       card.assetPath,
       width: width,
       height: height,
       fit: BoxFit.contain,
+    );
+  }
+}
+
+class _SeatLabel extends StatelessWidget {
+  final String position;
+  final bool isHero;
+
+  const _SeatLabel({required this.position, required this.isHero});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: isHero ? Colors.blue.shade700 : Colors.black87,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isHero ? Colors.white : Colors.grey.shade700,
+          width: 2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            position,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              height: 1.1,
+              letterSpacing: 0.4,
+            ),
+          ),
+          if (position == 'BTN') ...[
+            const SizedBox(width: 6),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE000E0),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0xAAFF00FF),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                'D',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

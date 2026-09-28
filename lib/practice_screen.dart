@@ -146,6 +146,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _hasAnswered = false;
     _selectedAction = null;
     _isProcessing = false;
+    _isHintVisible = false;
     setState(() {});
   }
 
@@ -366,21 +367,18 @@ class _PracticeScreenState extends State<PracticeScreen> {
           children: [
             SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16.0,
-                  horizontal: 4.0,
-                ),
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 16),
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: 300,
+                        minHeight: 300 + PokerTableView.heroExtraHeight,
                         maxHeight: max(
-                          300,
-                          MediaQuery.of(context).size.height * 0.45,
-                        ),
+                              300,
+                              MediaQuery.of(context).size.height * 0.45,
+                            ) +
+                            PokerTableView.heroExtraHeight,
                       ),
                       child: PokerTableView(
                         heroPosition: _currentPosition,
@@ -403,20 +401,18 @@ class _PracticeScreenState extends State<PracticeScreen> {
                               ),
                               color: Colors.amber,
                               tooltip: 'Show Hint',
-                              onPressed: _hasAnswered
-                                  ? null
-                                  : () {
-                                      final RenderBox box =
-                                          buttonContext.findRenderObject()
-                                              as RenderBox;
-                                      final position = box.localToGlobal(
-                                        Offset.zero,
-                                      );
-                                      setState(() {
-                                        _hintButtonRect = position & box.size;
-                                        _isHintVisible = !_isHintVisible;
-                                      });
-                                    },
+                              onPressed: () {
+                                final RenderBox box =
+                                    buttonContext.findRenderObject()
+                                        as RenderBox;
+                                final position = box.localToGlobal(
+                                  Offset.zero,
+                                );
+                                setState(() {
+                                  _hintButtonRect = position & box.size;
+                                  _isHintVisible = !_isHintVisible;
+                                });
+                              },
                             );
                           },
                         ),
