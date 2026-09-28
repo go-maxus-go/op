@@ -396,9 +396,6 @@ class _SeatCards extends StatelessWidget {
   static const double heroCardHeight = 65;
   static const double villainCardWidth = 30;
   static const double villainCardHeight = 45;
-  static const double _faceAspectRatio = 50 / 70;
-  static const String _cardBackAsset = 'assets/deck/cardback.png';
-
   const _SeatCards({
     required this.cards,
     required this.isHero,
@@ -428,9 +425,9 @@ class _SeatCards extends StatelessWidget {
       height: height,
       child: Center(
         child: AspectRatio(
-          aspectRatio: _faceAspectRatio,
+          aspectRatio: Card.faceAspectRatio,
           child: Image.asset(
-            faceDown ? _cardBackAsset : card.assetPath,
+            faceDown ? Card.backAssetPath : card.assetPath,
             fit: BoxFit.fill,
           ),
         ),

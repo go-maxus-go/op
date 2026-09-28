@@ -167,15 +167,20 @@ class _EquityScreenState extends State<EquityScreen> {
               color: isSelected
                   ? Colors.blue.withValues(alpha: 0.2)
                   : Colors.transparent,
-              border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey,
-                width: isSelected ? 3 : 1,
-              ),
+              border: isSelected
+                  ? Border.all(color: Colors.blue, width: 3)
+                  : null,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: card != null
-                ? Image.asset(card.assetPath, fit: BoxFit.contain)
-                : const Center(child: Icon(Icons.add, color: Colors.grey)),
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: Card.faceAspectRatio,
+                child: Image.asset(
+                  card?.assetPath ?? Card.backAssetPath,
+                  fit: BoxFit.fill,
+                ),
+              ),
+            ),
           ),
           if (label != null) ...[
             const SizedBox(height: 4),

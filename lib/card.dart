@@ -40,6 +40,11 @@ class Card {
 
   String get assetPath => 'assets/deck/card_$value$suit.png';
 
+  static const String backAssetPath = 'assets/deck/cardback.png';
+
+  /// Width / height of the card face images.
+  static const double faceAspectRatio = 50 / 70;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
