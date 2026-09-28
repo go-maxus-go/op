@@ -45,7 +45,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
   Card? _card2;
   String? _currentHand;
   final Map<String, List<Card>> _playerHands = {};
-  int _currentRng = 50;
 
   bool _hasAnswered = false;
   String? _selectedAction;
@@ -130,8 +129,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
       _card2 = _playerHands[_currentPosition]![1];
       break;
     }
-
-    _currentRng = Random().nextInt(100) + 1;
 
     int i1 = Card.ranks.indexOf(_card1!.value);
     int i2 = Card.ranks.indexOf(_card2!.value);
@@ -377,71 +374,28 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Color.lerp(
-                              Colors.red,
-                              Colors.blue,
-                              _currentRng / 100.0,
-                            )?.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Color.lerp(
-                                Colors.red,
-                                Colors.blue,
-                                _currentRng / 100.0,
-                              )!,
-                              width: 2,
-                            ),
-                          ),
-                          child: Text(
-                            'RNG: $_currentRng',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color.lerp(
-                                Colors.red,
-                                Colors.blue,
-                                _currentRng / 100.0,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Builder(
-                          builder: (buttonContext) {
-                            return IconButton(
-                              icon: const Icon(
-                                Icons.lightbulb_outline,
-                                size: 32,
-                              ),
-                              color: Colors.amber,
-                              tooltip: 'Show Hint',
-                              onPressed: _hasAnswered
-                                  ? null
-                                  : () {
-                                      final RenderBox box =
-                                          buttonContext.findRenderObject()
-                                              as RenderBox;
-                                      final position = box.localToGlobal(
-                                        Offset.zero,
-                                      );
-                                      setState(() {
-                                        _hintButtonRect = position & box.size;
-                                        _isHintVisible = !_isHintVisible;
-                                      });
-                                    },
-                            );
-                          },
-                        ),
-                      ],
+                    Builder(
+                      builder: (buttonContext) {
+                        return IconButton(
+                          icon: const Icon(Icons.lightbulb_outline, size: 32),
+                          color: Colors.amber,
+                          tooltip: 'Show Hint',
+                          onPressed: _hasAnswered
+                              ? null
+                              : () {
+                                  final RenderBox box =
+                                      buttonContext.findRenderObject()
+                                          as RenderBox;
+                                  final position = box.localToGlobal(
+                                    Offset.zero,
+                                  );
+                                  setState(() {
+                                    _hintButtonRect = position & box.size;
+                                    _isHintVisible = !_isHintVisible;
+                                  });
+                                },
+                        );
+                      },
                     ),
                     const SizedBox(height: 8),
                     ConstrainedBox(
