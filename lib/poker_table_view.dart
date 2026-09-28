@@ -8,6 +8,7 @@ class PokerTableView extends StatelessWidget {
   final String raise;
   final String limit;
   final bool displayInDollars;
+  final bool showOpponentCards;
   final Map<String, List<Card>> playerHands;
   final Widget? heroTrailing;
 
@@ -23,6 +24,7 @@ class PokerTableView extends StatelessWidget {
     required this.raise,
     required this.limit,
     required this.displayInDollars,
+    this.showOpponentCards = true,
     required this.playerHands,
     this.heroTrailing,
   });
@@ -117,7 +119,11 @@ class PokerTableView extends StatelessWidget {
       if (!folded && cards != null && cards.length == 2) {
         cardLayer.add(LayoutId(
           id: _TableLayoutDelegate.cardsId(i),
-          child: _SeatCards(cards: cards, isHero: isHero),
+          child: _SeatCards(
+            cards: cards,
+            isHero: isHero,
+            faceDown: !isHero && !showOpponentCards,
+          ),
         ));
 
         if (isHero && heroTrailing != null) {
@@ -384,13 +390,20 @@ class _BetChip extends StatelessWidget {
 class _SeatCards extends StatelessWidget {
   final List<Card> cards;
   final bool isHero;
+  final bool faceDown;
 
   static const double heroCardWidth = 45;
   static const double heroCardHeight = 65;
   static const double villainCardWidth = 30;
   static const double villainCardHeight = 45;
+  static const double _faceAspectRatio = 50 / 70;
+  static const String _cardBackAsset = 'assets/deck/cardback.png';
 
-  const _SeatCards({required this.cards, required this.isHero});
+  const _SeatCards({
+    required this.cards,
+    required this.isHero,
+    this.faceDown = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -408,11 +421,20 @@ class _SeatCards extends StatelessWidget {
     double width = isHero ? heroCardWidth : villainCardWidth;
     double height = isHero ? heroCardHeight : villainCardHeight;
 
-    return Image.asset(
-      card.assetPath,
+    // Faces and the back have different resolutions and slightly different
+    // proportions, so both are stretched into the face's aspect ratio.
+    return SizedBox(
       width: width,
       height: height,
-      fit: BoxFit.contain,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: _faceAspectRatio,
+          child: Image.asset(
+            faceDown ? _cardBackAsset : card.assetPath,
+            fit: BoxFit.fill,
+          ),
+        ),
+      ),
     );
   }
 }

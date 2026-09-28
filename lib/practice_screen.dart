@@ -50,6 +50,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   String? _selectedAction;
   bool _autoAdvance = true;
   bool _displayInDollars = false;
+  bool _showOpponentCards = true;
   bool _isProcessing = false;
   bool _isHintVisible = false;
   Rect? _hintButtonRect;
@@ -386,6 +387,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         raise: widget.raise,
                         limit: widget.limit,
                         displayInDollars: _displayInDollars,
+                        showOpponentCards: _showOpponentCards,
                         playerHands: _playerHands,
                         heroTrailing: Builder(
                           builder: (buttonContext) {
@@ -596,6 +598,18 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       onChanged: (val) {
                         setState(() => _displayInDollars = val);
                         setModalState(() => _displayInDollars = val);
+                      },
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      title: const Text("Show Opponents' Cards"),
+                      subtitle: const Text(
+                        'Reveal other players\' hands instead of card backs',
+                      ),
+                      value: _showOpponentCards,
+                      onChanged: (val) {
+                        setState(() => _showOpponentCards = val);
+                        setModalState(() => _showOpponentCards = val);
                       },
                     ),
                   ],
