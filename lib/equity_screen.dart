@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Card;
 import 'card.dart';
 import 'deck.dart';
+import 'equity_simulator.dart';
 import 'range_selector_screen.dart';
 
 class EquityHand {
@@ -54,10 +55,54 @@ class HandTarget extends SelectionTarget {
 }
 
 class _EquityScreenState extends State<EquityScreen> {
+  static const int _maxHands = 10;
+  static const int _maxSimulations = 100000;
+
+  /// Simulations run between UI updates. Small enough to keep frames smooth.
+  static const int _simulationBatchSize = 100;
+
   List<Card?> _board = List.filled(5, null);
   final List<EquityHand> _hands = [EquityHand(), EquityHand()];
 
   SelectionTarget? _currentSelection;
+
+  /// Null when the equity cannot be calculated, e.g. when a range is set.
+  EquitySimulator? _simulator;
+
+  @override
+  void initState() {
+    super.initState();
+    _recalculate();
+  }
+
+  /// Restarts the simulation for the current hands and board.
+  void _recalculate() {
+    _simulator = null;
+    if (_hands.any((hand) => hand.range.isNotEmpty)) return;
+
+    final simulator = EquitySimulator(
+      hands: [for (final hand in _hands) hand.cards.whereType<Card>().toList()],
+      board: _board.whereType<Card>().toList(),
+      maxSimulations: _maxSimulations,
+    );
+    _simulator = simulator;
+    _runSimulation(simulator);
+  }
+
+  Future<void> _runSimulation(EquitySimulator simulator) async {
+    while (!simulator.isComplete) {
+      await Future<void>.delayed(Duration.zero);
+      if (!mounted || !identical(simulator, _simulator)) return;
+      setState(() => simulator.run(_simulationBatchSize));
+    }
+  }
+
+  String _equityText(int handIndex) {
+    final simulator = _simulator;
+    if (simulator == null || simulator.simulations == 0) return 'Equity: --%';
+    final equity = simulator.equities[handIndex] * 100;
+    return 'Equity: ${equity.toStringAsFixed(2)}%';
+  }
 
   Set<Card> get _selectedCards {
     final set = <Card>{};
@@ -112,12 +157,14 @@ class _EquityScreenState extends State<EquityScreen> {
           }
         }
       }
+      _recalculate();
     });
   }
 
   void _addHand() {
     setState(() {
       _hands.add(EquityHand());
+      _recalculate();
     });
   }
 
@@ -135,6 +182,7 @@ class _EquityScreenState extends State<EquityScreen> {
           );
         }
       }
+      _recalculate();
     });
   }
 
@@ -226,7 +274,7 @@ class _EquityScreenState extends State<EquityScreen> {
   Widget _buildHands() {
     return Expanded(
       child: ListView.builder(
-        itemCount: _hands.length + 1,
+        itemCount: _hands.length + (_hands.length < _maxHands ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == _hands.length) {
             return Padding(
@@ -290,16 +338,20 @@ class _EquityScreenState extends State<EquityScreen> {
                             _currentSelection = null;
                           }
                         }
+                        _recalculate();
                       });
                     }
                   },
                   child: const Text('Range'),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Equity: --%',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    _equityText(index),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 if (_hands.length > 2)
@@ -417,6 +469,7 @@ class _EquityScreenState extends State<EquityScreen> {
                   _hands[i] = EquityHand();
                 }
                 _currentSelection = null;
+                _recalculate();
               });
             },
             tooltip: 'Clear All',
@@ -450,6 +503,11 @@ class _EquityScreenState extends State<EquityScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          if (_simulator != null)
+                            Text(
+                              'Simulations: ${_simulator!.simulations}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 8),
