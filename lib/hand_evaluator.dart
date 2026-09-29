@@ -1,4 +1,5 @@
 import 'card.dart';
+import 'hand.dart';
 
 /// Poker hand categories, ordered from weakest to strongest.
 enum HandCategory {
@@ -21,18 +22,30 @@ class HandValue implements Comparable<HandValue> {
   /// between hands of the same [category], most significant first.
   ///
   /// Hands of the same category always have the same number of tiebreakers.
-  final List<int> tiebreakers;
+  final List<String> tiebreakers;
 
   const HandValue(this.category, this.tiebreakers);
 
   @override
   int compareTo(HandValue other) {
-    if (category != other.category) {
-      return category.index - other.category.index;
+    if (category.index > other.category.index) {
+      return 1;
     }
-    for (var i = 0; i < tiebreakers.length; i++) {
-      final diff = tiebreakers[i] - other.tiebreakers[i];
-      if (diff != 0) return diff;
+    if (category.index < other.category.index) {
+      return -1;
+    }
+
+    final thistb = tiebreakers.map((t) => Card.ranks.indexOf(t)).toList();
+    final othertb = other.tiebreakers
+        .map((t) => Card.ranks.indexOf(t))
+        .toList();
+    for (var i = 0; i < thistb.length; i++) {
+      if (thistb[i] > othertb[i]) {
+        return 1;
+      }
+      if (thistb[i] < othertb[i]) {
+        return -1;
+      }
     }
     return 0;
   }
@@ -47,146 +60,178 @@ class HandValue implements Comparable<HandValue> {
   int get hashCode => Object.hash(category, Object.hashAll(tiebreakers));
 
   @override
-  String toString() =>
-      '${category.name}(${tiebreakers.map((r) => Card.ranks[r]).join()})';
+  String toString() => '${category.name}(${tiebreakers.join()})';
 }
 
 /// Texas Hold'em hand evaluation and showdown rules.
 class HandEvaluator {
-  static const int _ace = 12;
-  static const int _five = 3;
-
   /// Returns the value of the best five-card hand that can be made from
   /// [cards], which must contain 5 to 7 distinct cards.
-  static HandValue evaluate(List<Card> cards) {
-    if (cards.length < 5 || cards.length > 7) {
-      throw ArgumentError('Expected 5 to 7 cards, got ${cards.length}');
-    }
-    if (cards.toSet().length != cards.length) {
-      throw ArgumentError('Duplicate cards: $cards');
+  static HandValue evaluate(Hand hand, List<Card> board) {
+    if (board.length < 3 || board.length > 5) {
+      throw ArgumentError('Invalid board: $board');
     }
 
-    final r = [for (final card in cards) _rank(card)];
-    final s = [for (final card in cards) card.suit];
-    final n = cards.length;
-    HandValue? best;
-    for (var a = 0; a < n; a++) {
-      for (var b = a + 1; b < n; b++) {
-        for (var c = b + 1; c < n; c++) {
-          for (var d = c + 1; d < n; d++) {
-            for (var e = d + 1; e < n; e++) {
-              final value = _evaluateFive(
-                [r[a], r[b], r[c], r[d], r[e]],
-                [s[a], s[b], s[c], s[d], s[e]],
-              );
-              if (best == null || value > best) best = value;
+    var bestValue = HandValue(HandCategory.highCard, ['7', '5', '4', '3', '2']);
+
+    switch (board.length) {
+      case 5:
+        for (int i = 0; i < board.length; i++) {
+          for (int j = i + 1; j < board.length; j++) {
+            final handValue = evaluateFiveCards([
+              hand.first,
+              hand.second,
+              ...List.of(board)
+                ..removeAt(j)
+                ..removeAt(i),
+            ]);
+            if (handValue > bestValue) {
+              bestValue = handValue;
             }
           }
         }
-      }
+        for (int i = 0; i < board.length; i++) {
+          final handValue = evaluateFiveCards([
+            hand.first,
+            ...List.of(board)..removeAt(i),
+          ]);
+          if (handValue > bestValue) {
+            bestValue = handValue;
+          }
+        }
+        for (int i = 0; i < board.length; i++) {
+          final handValue = evaluateFiveCards([
+            hand.second,
+            ...List.of(board)..removeAt(i),
+          ]);
+          if (handValue > bestValue) {
+            bestValue = handValue;
+          }
+        }
+        final handValue = evaluateFiveCards(board);
+        if (handValue > bestValue) {
+          bestValue = handValue;
+        }
+        break;
+      case 4:
+        for (int i = 0; i < board.length; i++) {
+          final handValue = evaluateFiveCards([
+            hand.first,
+            hand.second,
+            ...List.of(board)..removeAt(i),
+          ]);
+          ;
+          if (handValue > bestValue) {
+            bestValue = handValue;
+          }
+        }
+        var handValue = evaluateFiveCards([hand.first, ...board]);
+        if (handValue > bestValue) {
+          bestValue = handValue;
+        }
+        handValue = evaluateFiveCards([hand.second, ...board]);
+        if (handValue > bestValue) {
+          bestValue = handValue;
+        }
+        break;
+      case 3:
+        final handValue = evaluateFiveCards([
+          hand.first,
+          hand.second,
+          ...board,
+        ]);
+        if (handValue > bestValue) {
+          bestValue = handValue;
+        }
+        break;
+      default:
+        throw ArgumentError('Invalid board: $board');
     }
-    return best!;
+    return bestValue;
   }
 
-  /// Returns the indices of the [hands] that win the pot at showdown on a
-  /// complete five-card [board]. More than one index means a split pot.
-  static List<int> winners(List<List<Card>> hands, List<Card> board) {
-    if (hands.isEmpty) throw ArgumentError('Expected at least one hand');
-    if (board.length != 5) {
-      throw ArgumentError('Expected a 5-card board, got ${board.length}');
-    }
-    for (final hand in hands) {
-      if (hand.length != 2) {
-        throw ArgumentError('Expected 2 hole cards, got $hand');
-      }
-    }
-    final allCards = [...board, for (final hand in hands) ...hand];
-    if (allCards.toSet().length != allCards.length) {
-      throw ArgumentError('Duplicate cards: $allCards');
-    }
-
-    final values = [
-      for (final hand in hands) evaluate([...hand, ...board]),
-    ];
-    final best = values.reduce((a, b) => a > b ? a : b);
-    return [
-      for (var i = 0; i < values.length; i++)
-        if (values[i] == best) i,
-    ];
-  }
-
-  /// Returns the value of exactly five distinct cards.
-  static HandValue evaluateFive(List<Card> cards) {
+  static HandValue evaluateFiveCards(List<Card> cards) {
+    cards = cards.toList()..sort((a, b) => b.compareTo(a));
     if (cards.length != 5) {
       throw ArgumentError('Expected 5 cards, got ${cards.length}');
     }
     if (cards.toSet().length != 5) {
       throw ArgumentError('Duplicate cards: $cards');
     }
-    return _evaluateFive(
-      [for (final card in cards) _rank(card)],
-      [for (final card in cards) card.suit],
-    );
-  }
 
-  static int _rank(Card card) => Card.ranks.indexOf(card.value);
+    final (isStraight, straightHigh) = _isStraight(cards);
+    final isFlush = cards.every((card) => card.suit == cards[0].suit);
+    final counts = _countAndSort(cards);
 
-  /// Returns the value of five distinct cards given as parallel lists of
-  /// rank indices and suits. Sorts [ranks] in place.
-  static HandValue _evaluateFive(List<int> ranks, List<String> suits) {
-    ranks.sort((a, b) => b - a);
-
-    final counts = List.filled(Card.ranks.length, 0);
-    final distinct = <int>[];
-    for (final rank in ranks) {
-      if (counts[rank]++ == 0) distinct.add(rank);
-    }
-    // Distinct ranks, by number of occurrences and then by rank, descending.
-    // E.g. K-K-K-4-4 gives [K, 4] and A-9-9-5-2 gives [9, A, 5, 2].
-    final groups = distinct
-      ..sort((a, b) {
-        final byCount = counts[b] - counts[a];
-        return byCount != 0 ? byCount : b - a;
-      });
-    final largest = counts[groups[0]];
-    final secondLargest = groups.length > 1 ? counts[groups[1]] : 0;
-
-    final isFlush = suits.every((suit) => suit == suits[0]);
-    final straightHigh = groups.length == 5 ? _straightHigh(ranks) : null;
-
-    if (isFlush && straightHigh != null) {
+    if (isFlush && isStraight) {
       return HandValue(HandCategory.straightFlush, [straightHigh]);
     }
-    if (largest == 4) {
-      return HandValue(HandCategory.fourOfAKind, groups);
+    if (counts[0].$2 == 4) {
+      return HandValue(HandCategory.fourOfAKind, [counts[0].$1, counts[1].$1]);
     }
-    if (largest == 3 && secondLargest == 2) {
-      return HandValue(HandCategory.fullHouse, groups);
+    if (counts[0].$2 == 3 && counts[1].$2 == 2) {
+      return HandValue(HandCategory.fullHouse, [counts[0].$1, counts[1].$1]);
     }
     if (isFlush) {
-      return HandValue(HandCategory.flush, ranks);
+      return HandValue(HandCategory.flush, cards.map((c) => c.value).toList());
     }
-    if (straightHigh != null) {
+    if (isStraight) {
       return HandValue(HandCategory.straight, [straightHigh]);
     }
-    if (largest == 3) {
-      return HandValue(HandCategory.threeOfAKind, groups);
+    if (counts[0].$2 == 3) {
+      return HandValue(HandCategory.threeOfAKind, [
+        counts[0].$1,
+        counts[1].$1,
+        counts[2].$1,
+      ]);
     }
-    if (largest == 2 && secondLargest == 2) {
-      return HandValue(HandCategory.twoPair, groups);
+    if (counts[0].$2 == 2 && counts[1].$2 == 2) {
+      return HandValue(HandCategory.twoPair, [
+        counts[0].$1,
+        counts[1].$1,
+        counts[2].$1,
+      ]);
     }
-    if (largest == 2) {
-      return HandValue(HandCategory.onePair, groups);
+    if (counts[0].$2 == 2 && counts[1].$2 == 1) {
+      return HandValue(HandCategory.onePair, [
+        counts[0].$1,
+        counts[1].$1,
+        counts[2].$1,
+        counts[3].$1,
+      ]);
     }
-    return HandValue(HandCategory.highCard, ranks);
+
+    return HandValue(HandCategory.highCard, cards.map((c) => c.value).toList());
   }
 
-  /// Returns the highest rank of the straight formed by five distinct ranks
-  /// sorted in descending order, or null if they do not form a straight.
-  /// The wheel (A-2-3-4-5) is a five-high straight.
-  static int? _straightHigh(List<int> ranks) {
-    if (ranks[0] - ranks[4] == 4) return ranks[0];
-    if (ranks[0] == _ace && ranks[1] == _five) return _five;
-    return null;
+  static (bool, String) _isStraight(List<Card> cards) {
+    var result = true;
+    for (var i = 1; i < cards.length; i++) {
+      if (Card.ranks.indexOf(cards[i].value) + 1 !=
+          Card.ranks.indexOf(cards[i - 1].value)) {
+        result = false;
+        break;
+      }
+    }
+
+    if (cards.map((c) => c.value).toList() case ['A', '5', '4', '3', '2']) {
+      return (true, cards[1].value);
+    }
+
+    return (result, cards[0].value);
+  }
+
+  static List<(String, int)> _countAndSort(List<Card> cards) {
+    final counts = <String, int>{};
+    for (var card in cards) {
+      counts[card.value] = (counts[card.value] ?? 0) + 1;
+    }
+    return counts.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) {
+      final result = b.$2.compareTo(a.$2);
+      if (result != 0) {
+        return result;
+      }
+      return Card.ranks.indexOf(b.$1).compareTo(Card.ranks.indexOf(a.$1));
+    });
   }
 }

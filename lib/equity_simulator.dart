@@ -131,10 +131,10 @@ class EquitySimulator {
       for (var i = board.length; i < 5; i++) _deck[next++],
     ];
 
-    final winners = HandEvaluator.winners(dealtHands, dealtBoard);
-    for (final winner in winners) {
-      _potShares[winner] += 1 / winners.length;
-    }
+    // final winners = HandEvaluator.winners(dealtHands, dealtBoard);
+    // for (final winner in winners) {
+    //   _potShares[winner] += 1 / winners.length;
+    // }
     _simulations++;
   }
 }

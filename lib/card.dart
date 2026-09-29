@@ -1,4 +1,4 @@
-class Card {
+class Card implements Comparable<Card> {
   static const List<String> ranks = [
     '2',
     '3',
@@ -46,6 +46,11 @@ class Card {
   static const double faceAspectRatio = 50 / 70;
 
   @override
+  int compareTo(Card other) {
+    return ranks.indexOf(value) - ranks.indexOf(other.value);
+  }
+
+  @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is Card &&
@@ -62,11 +67,11 @@ class Card {
   bool sameValue(Card card) => value == card.value;
 
   bool operator <(Card card) {
-    return ranks.indexOf(value) < ranks.indexOf(card.value);
+    return compareTo(card) < 0;
   }
 
   bool operator >(Card card) {
-    return ranks.indexOf(value) > ranks.indexOf(card.value);
+    return compareTo(card) > 0;
   }
 
   bool operator <=(Card card) {

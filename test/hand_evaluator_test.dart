@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/card.dart';
+import 'package:optimal_poker/hand.dart';
 import 'package:optimal_poker/hand_evaluator.dart';
 
 /// Parses concatenated cards, e.g. 'AhKd2c'.
@@ -7,323 +8,436 @@ List<Card> cards(String s) => [
   for (var i = 0; i < s.length; i += 2) Card(s[i], s[i + 1]),
 ];
 
-HandValue eval(String s) => HandEvaluator.evaluate(cards(s));
-
-int rank(String r) => Card.ranks.indexOf(r);
-
-List<int> ranks(String s) => [for (final r in s.split('')) rank(r)];
+HandValue five(String s) => HandEvaluator.evaluateFiveCards(cards(s));
 
 void main() {
   group('HandValue', () {
-    test('compares by category first', () {
-      const pair = HandValue(HandCategory.onePair, [0, 1, 2, 3]);
-      const highCard = HandValue(HandCategory.highCard, [12, 11, 10, 9, 7]);
-      expect(pair > highCard, isTrue);
-      expect(highCard < pair, isTrue);
-      expect(pair.compareTo(highCard), greaterThan(0));
+    test('stronger categories beat weaker ones', () {
+      const weakestToStrongest = HandCategory.values;
+      for (var i = 0; i < weakestToStrongest.length; i++) {
+        for (var j = i + 1; j < weakestToStrongest.length; j++) {
+          final weaker = HandValue(weakestToStrongest[i], ['A']);
+          final stronger = HandValue(weakestToStrongest[j], ['2']);
+          expect(stronger, greaterThan(weaker));
+          expect(weaker, lessThan(stronger));
+          expect(stronger.compareTo(weaker), 1);
+          expect(weaker.compareTo(stronger), -1);
+        }
+      }
     });
 
-    test('compares tiebreakers in order of significance', () {
-      const a = HandValue(HandCategory.onePair, [5, 12, 3, 2]);
-      const b = HandValue(HandCategory.onePair, [5, 11, 10, 9]);
-      expect(a > b, isTrue);
-      expect(b < a, isTrue);
-    });
-
-    test('equal values are equal and share a hash code', () {
-      const a = HandValue(HandCategory.flush, [12, 10, 8, 4, 2]);
-      const b = HandValue(HandCategory.flush, [12, 10, 8, 4, 2]);
+    test('identical hands compare equal and share a hash code', () {
+      const a = HandValue(HandCategory.straight, ['T']);
+      const b = HandValue(HandCategory.straight, ['T']);
       expect(a, equals(b));
       expect(a.hashCode, b.hashCode);
       expect(a.compareTo(b), 0);
-      expect(a > b, isFalse);
-      expect(a < b, isFalse);
+      expect(a, isNot(greaterThan(b)));
+      expect(a, isNot(lessThan(b)));
     });
 
-    test('toString is readable', () {
-      expect(eval('AhAdKsKc2d').toString(), 'twoPair(AK2)');
-    });
-  });
-
-  group('evaluateFive categories', () {
-    final cases = {
-      'AsKsQsJsTs': (HandCategory.straightFlush, 'A'),
-      '9h8h7h6h5h': (HandCategory.straightFlush, '9'),
-      '5d4d3d2dAd': (HandCategory.straightFlush, '5'),
-      'QcQdQhQs3d': (HandCategory.fourOfAKind, 'Q3'),
-      '2c2d2hAsAd': (HandCategory.fullHouse, '2A'),
-      'Kh9h7h4h2h': (HandCategory.flush, 'K9742'),
-      'Th9c8d7s6h': (HandCategory.straight, 'T'),
-      'AhKcQdJsTh': (HandCategory.straight, 'A'),
-      'As2c3d4h5s': (HandCategory.straight, '5'),
-      '7c7d7hKs2d': (HandCategory.threeOfAKind, '7K2'),
-      'JcJd4h4sAd': (HandCategory.twoPair, 'J4A'),
-      '9c9dAhKs2d': (HandCategory.onePair, '9AK2'),
-      'AcJd8h5s3d': (HandCategory.highCard, 'AJ853'),
-    };
-    cases.forEach((hand, expected) {
-      test('$hand is ${expected.$1.name}', () {
-        final value = HandEvaluator.evaluateFive(cards(hand));
-        expect(value.category, expected.$1);
-        expect(value.tiebreakers, ranks(expected.$2));
-      });
+    test('quad aces beat quad kings', () {
+      final aces = HandValue(HandCategory.fourOfAKind, ['A', 'K']);
+      final kings = HandValue(HandCategory.fourOfAKind, ['K', 'A']);
+      expect(aces, greaterThan(kings));
     });
 
-    test('card order does not matter', () {
-      expect(eval('2d4h4sAdJc'), eval('Jc2d4h4sAd'));
-      expect(eval('5s4h3d2cAs'), eval('As2c3d4h5s'));
+    test('quad kicker breaks a tie when the quad rank matches', () {
+      final kingKicker = HandValue(HandCategory.fourOfAKind, ['A', 'K']);
+      final queenKicker = HandValue(HandCategory.fourOfAKind, ['A', 'Q']);
+      expect(kingKicker, greaterThan(queenKicker));
     });
 
-    test('straights do not wrap around the ace', () {
-      expect(eval('QsKdAh2c3s').category, HandCategory.highCard);
-      expect(eval('KsAd2h3c4s').category, HandCategory.highCard);
+    test('aces full of deuces beat deuces full of aces', () {
+      final acesFull = HandValue(HandCategory.fullHouse, ['A', '2']);
+      final deucesFull = HandValue(HandCategory.fullHouse, ['2', 'A']);
+      expect(acesFull, greaterThan(deucesFull));
+      expect(acesFull, isNot(equals(deucesFull)));
     });
 
-    test('four suited cards are not a flush', () {
-      expect(eval('Ah9h7h4h2c').category, HandCategory.highCard);
+    test('aces full of kings beat aces full of queens', () {
+      final kings = HandValue(HandCategory.fullHouse, ['A', 'K']);
+      final queens = HandValue(HandCategory.fullHouse, ['A', 'Q']);
+      expect(kings, greaterThan(queens));
     });
 
-    test('four to a straight is not a straight', () {
-      expect(eval('Th9c8d7sAh').category, HandCategory.highCard);
+    test('aces and kings beat kings and queens', () {
+      final acesUp = HandValue(HandCategory.twoPair, ['A', 'K', '2']);
+      final kingsUp = HandValue(HandCategory.twoPair, ['K', 'Q', 'A']);
+      expect(acesUp, greaterThan(kingsUp));
     });
-  });
 
-  group('category order', () {
-    test('every category beats the ones below it', () {
-      final ascending = [
-        eval('AcJd8h5s3d'), // high card
-        eval('2c2d3h4s6d'), // pair of twos
-        eval('3c3d2h2s4d'), // two pair
-        eval('2c2d2h3s4d'), // trips
-        eval('As2c3d4h5s'), // wheel
-        eval('7h5h4h3h2h'), // seven-high flush
-        eval('2c2d2h3s3d'), // full house
-        eval('2c2d2h2s3d'), // quads
-        eval('5d4d3d2dAd'), // steel wheel
-      ];
-      for (var i = 0; i < ascending.length; i++) {
-        expect(ascending[i].category, HandCategory.values[i]);
-        for (var j = 0; j < i; j++) {
-          expect(ascending[i] > ascending[j], isTrue, reason: '$i vs $j');
-        }
+    test('two pair kicker is ranked after both pairs', () {
+      final king = HandValue(HandCategory.twoPair, ['A', '2', 'K']);
+      final queen = HandValue(HandCategory.twoPair, ['A', '2', 'Q']);
+      expect(king, greaterThan(queen));
+    });
+
+    test('set of threes beats a set of deuces with taller kickers', () {
+      final threes = HandValue(HandCategory.threeOfAKind, ['3', '5', '4']);
+      final deuces = HandValue(HandCategory.threeOfAKind, ['2', 'A', 'K']);
+      expect(threes, greaterThan(deuces));
+    });
+
+    test('pair of threes beats a pair of deuces with taller kickers', () {
+      final threes = HandValue(HandCategory.onePair, ['3', '7', '5', '4']);
+      final deuces = HandValue(HandCategory.onePair, ['2', 'A', 'K', 'Q']);
+      expect(threes, greaterThan(deuces));
+    });
+
+    test('pair kicker order is most significant first', () {
+      final king = HandValue(HandCategory.onePair, ['A', 'K', '5', '4']);
+      final queen = HandValue(HandCategory.onePair, ['A', 'Q', 'J', 'T']);
+      expect(king, greaterThan(queen));
+    });
+
+    test('flush kickers compare from the top', () {
+      final kingHigh = HandValue(HandCategory.flush, ['A', 'K', '9', '5', '2']);
+      final queenHigh = HandValue(HandCategory.flush, [
+        'A',
+        'Q',
+        'J',
+        'T',
+        '9',
+      ]);
+      expect(kingHigh, greaterThan(queenHigh));
+    });
+
+    test('broadway beats a wheel', () {
+      final broadway = HandValue(HandCategory.straight, ['A']);
+      final wheel = HandValue(HandCategory.straight, ['5']);
+      expect(broadway, greaterThan(wheel));
+    });
+
+    test('equality agrees with hashCode', () {
+      final a = HandValue(HandCategory.fourOfAKind, ['2', 'A']);
+      final b = HandValue(HandCategory.fourOfAKind, ['A', '2']);
+      if (a == b) {
+        expect(a.hashCode, b.hashCode);
       }
     });
 
-    test('royal flush is the best possible hand', () {
-      expect(eval('AsKsQsJsTs') > eval('KhQhJhTh9h'), isTrue);
+    test('toString names the category and tiebreakers', () {
+      expect(
+        const HandValue(HandCategory.fullHouse, ['A', 'K']).toString(),
+        'fullHouse(AK)',
+      );
     });
   });
 
-  group('tiebreakers within a category', () {
-    void expectBetter(String better, String worse) {
-      expect(eval(better) > eval(worse), isTrue, reason: '$better > $worse');
-    }
-
-    void expectTie(String a, String b) {
-      expect(eval(a), eval(b), reason: '$a == $b');
-    }
-
-    test('straight flush', () {
-      expectBetter('6d5d4d3d2d', '5c4c3c2cAc');
-      expectTie('9h8h7h6h5h', '9s8s7s6s5s');
-    });
-
-    test('four of a kind', () {
-      expectBetter('3c3d3h3s2d', '2c2d2h2sAd');
-      expectBetter('7c7d7h7sAd', '7c7d7h7sKd');
-    });
-
-    test('full house', () {
-      expectBetter('3c3d3h2s2d', '2c2d2hAsAd');
-      expectBetter('KcKdKhAsAd', 'KcKdKhQsQd');
-    });
-
-    test('flush compares all five cards', () {
-      expectBetter('Ah9h7h4h3h', 'Ac9c7c4c2c');
-      expectBetter('AhKh3h2h4h', 'AcQcJcTc8c');
-      expectTie('Ah9h7h4h3h', 'As9s7s4s3s');
-    });
-
-    test('straight', () {
-      expectBetter('6h5c4d3s2h', '5h4c3d2sAh');
-      expectBetter('AhKcQdJsTh', 'KhQcJdTs9h');
-      expectTie('Th9c8d7s6h', 'Tc9d8s7h6c');
-    });
-
-    test('three of a kind', () {
-      expectBetter('3c3d3h2s4d', '2c2d2hAsKd');
-      expectBetter('7c7d7hAs2d', '7c7d7hKsQd');
-      expectBetter('7c7d7hAs3d', '7c7d7hAs2d');
-    });
-
-    test('two pair', () {
-      expectBetter('KcKd2h2s3d', 'QcQdJhJsAd');
-      expectBetter('KcKd3h3s2d', 'KcKd2h2sAd');
-      expectBetter('KcKd3h3sAd', 'KcKd3h3sQd');
-      expectTie('KcKd3h3sAd', 'KhKs3c3dAs');
-    });
-
-    test('one pair', () {
-      expectBetter('3c3d4h5s6d', '2c2dAhKsQd');
-      expectBetter('9c9dAhKs2d', '9c9dAhQsJd');
-      expectBetter('9c9dAhKs3d', '9c9dAhKs2d');
-    });
-
-    test('high card compares all five cards', () {
-      expectBetter('AcJd8h5s3d', 'KcQdJh9s7d');
-      expectBetter('AcJd8h5s3d', 'AcJd8h5s2d');
-      expectTie('AcJd8h5s3d', 'AdJh8s5c3h');
-    });
-  });
-
-  group('evaluate with 6 or 7 cards', () {
-    test('picks the best five cards', () {
-      expect(eval('AhAd7c7s2h2dKc'), eval('AhAd7c7sKc'));
-    });
-
-    test('three pairs use the best remaining card as kicker', () {
-      // The kicker is the third pair's rank when it beats the single card.
-      expect(eval('AhAdKcKsQhQd2c').tiebreakers, ranks('AKQ'));
-    });
-
-    test('two sets make a full house with the higher set', () {
-      final value = eval('9h9d9c5s5h5dAc');
-      expect(value.category, HandCategory.fullHouse);
-      expect(value.tiebreakers, ranks('95'));
-    });
-
-    test('trips plus two pairs use the higher pair', () {
-      expect(eval('2h2d2cKsKh3d3c').tiebreakers, ranks('2K'));
-    });
-
-    test('quads use the best kicker even if it comes from a pair or trips', () {
-      expect(eval('8h8d8c8sKhKd2c').tiebreakers, ranks('8K'));
-      expect(eval('8h8d8c8s5h5d5c').tiebreakers, ranks('85'));
-    });
-
-    test('a flush beats a straight made from the same cards', () {
-      final value = eval('9h8h7h6h2hTc5d');
-      expect(value.category, HandCategory.flush);
-      expect(value.tiebreakers, ranks('98762'));
-    });
-
-    test('six suited cards use the best five', () {
-      expect(eval('AhKh9h7h4h2hAs').tiebreakers, ranks('AK974'));
-    });
-
-    test('a straight flush beats a higher straight', () {
-      final value = eval('9s8s7s6s5sTd4c');
+  group('evaluateFiveCards categories', () {
+    test('royal flush', () {
+      final value = five('AsKsQsJsTs');
       expect(value.category, HandCategory.straightFlush);
-      expect(value.tiebreakers, ranks('9'));
+      expect(value.tiebreakers, ['A']);
     });
 
-    test('the highest straight is used with six connected cards', () {
-      expect(eval('8c7d6h5s4c3d2h').tiebreakers, ranks('8'));
+    test('steel wheel is a five-high straight flush', () {
+      final value = five('Ah2h3h4h5h');
+      expect(value.category, HandCategory.straightFlush);
+      expect(value.tiebreakers, ['5']);
     });
 
-    test('a wheel with a six makes a six-high straight', () {
-      expect(eval('Ac2d3h4s5c6dKh').tiebreakers, ranks('6'));
+    test('six-high straight flush beats the steel wheel', () {
+      expect(five('6s5s4s3s2s'), greaterThan(five('As5s4s3s2s')));
     });
 
-    test('works with 6 cards', () {
-      expect(eval('AhAdAcKsKh2d').category, HandCategory.fullHouse);
+    test('straight flush beats quads', () {
+      expect(five('6s5s4s3s2s'), greaterThan(five('AsAhAdAcKs')));
+    });
+
+    test('quads with kicker', () {
+      final value = five('AsAhAdAcKs');
+      expect(value.category, HandCategory.fourOfAKind);
+      expect(value.tiebreakers, ['A', 'K']);
+    });
+
+    test('quad aces beat quad kings at showdown', () {
+      expect(five('AsAhAdAc2s'), greaterThan(five('KsKhKdKcAs')));
+    });
+
+    test('full house trips rank then pair rank', () {
+      final value = five('KsKhKdAcAs');
+      expect(value.category, HandCategory.fullHouse);
+      expect(value.tiebreakers, ['K', 'A']);
+      expect(five('AsAhAdKcKs'), greaterThan(value));
+    });
+
+    test('full house beats a flush', () {
+      expect(five('AsAhAdKcKs'), greaterThan(five('AsQs9s6s2s')));
+    });
+
+    test('flush keeps kickers in descending rank', () {
+      final value = five('AsQs9s6s2s');
+      expect(value.category, HandCategory.flush);
+      expect(value.tiebreakers, ['A', 'Q', '9', '6', '2']);
+    });
+
+    test('ace-king-queen-jack-nine of hearts is a flush', () {
+      final value = five('AhKhQhJh9h');
+      expect(value.category, HandCategory.flush);
+      expect(value.tiebreakers, ['A', 'K', 'Q', 'J', '9']);
+    });
+
+    test('that flush loses to quad deuces', () {
+      expect(five('2s2h2d2c3s'), greaterThan(five('AhKhQhJh9h')));
+    });
+
+    test('ace-king-queen-jack-nine offsuit is high card', () {
+      expect(five('AhKhQhJh9d').category, HandCategory.highCard);
+    });
+
+    test('a wheel beats ace high', () {
+      expect(five('Ah5c4d3s2h'), greaterThan(five('AsKd8c4h2s')));
+    });
+
+    test('a steel wheel beats quad aces', () {
+      expect(five('As5s4s3s2s'), greaterThan(five('AhAdAcAsKh')));
+    });
+
+    test('broadway straight', () {
+      final value = five('AsKdQcJhTs');
+      expect(value.category, HandCategory.straight);
+      expect(value.tiebreakers, ['A']);
+    });
+
+    test('six-high straight beats a wheel', () {
+      expect(five('6s5h4d3c2s'), greaterThan(five('Ah5c4d3s2h')));
+    });
+
+    test('wheel is five-high, not ace-high', () {
+      final value = five('Ah5c4d3s2h');
+      expect(value.category, HandCategory.straight);
+      expect(value.tiebreakers, ['5']);
+    });
+
+    test('ace through nine is not a straight', () {
+      final value = five('AsKdQcJh9s');
+      expect(value.category, HandCategory.highCard);
+      expect(value.tiebreakers, ['A', 'K', 'Q', 'J', '9']);
+    });
+
+    test('eight through three with a gap is not a straight', () {
+      expect(five('8s7h6d5c3h').category, HandCategory.highCard);
+    });
+
+    test('ace-high with a gap under the ace is not a straight', () {
+      expect(five('As9h8d7c6s').category, HandCategory.highCard);
+    });
+
+    test('a wrapped wheel is not a straight', () {
+      expect(five('As6h5d4c3s').category, HandCategory.highCard);
+    });
+
+    test('nine-eight-seven-six with a paired six is a pair', () {
+      final value = five('9s8h7d6c6s');
+      expect(value.category, HandCategory.onePair);
+      expect(value.tiebreakers, ['6', '9', '8', '7']);
+    });
+
+    test('a pair of deuces beats ace-king-queen-jack-nine', () {
+      expect(five('2s2h7d5c4h'), greaterThan(five('AsKdQcJh9s')));
+    });
+
+    test('straight beats trips', () {
+      expect(five('9s8h7d6c5s'), greaterThan(five('AsAhAdKcQs')));
+    });
+
+    test('trips rank then kickers', () {
+      final value = five('QsQhQdAcKs');
+      expect(value.category, HandCategory.threeOfAKind);
+      expect(value.tiebreakers, ['Q', 'A', 'K']);
+    });
+
+    test('set of aces beats a set of kings', () {
+      expect(five('AsAhAd3c2s'), greaterThan(five('KsKhKdAcQs')));
+    });
+
+    test('trips beat two pair', () {
+      expect(five('2s2h2dAcKs'), greaterThan(five('AsAhKsKhQd')));
+    });
+
+    test('two pair ranks the pairs then the kicker', () {
+      final value = five('KsKh2s2hAc');
+      expect(value.category, HandCategory.twoPair);
+      expect(value.tiebreakers, ['K', '2', 'A']);
+    });
+
+    test('aces and kings beat kings and queens at showdown', () {
+      expect(five('AsAhKsKh2d'), greaterThan(five('KsKhQsQhAc')));
+    });
+
+    test('two pair beats one pair', () {
+      final twoPair = five('2s2h3c3d4h');
+      final pair = five('AsAhKdQcJs');
+      expect(pair.category, HandCategory.onePair);
+      expect(twoPair, greaterThan(pair));
+    });
+
+    test('one pair ranks the pair then the kickers', () {
+      final value = five('AsAhKdQcJs');
+      expect(value.category, HandCategory.onePair);
+      expect(value.tiebreakers, ['A', 'K', 'Q', 'J']);
+    });
+
+    test('pair of aces beats pair of kings', () {
+      expect(five('AsAh5d4c3s'), greaterThan(five('KsKhAdQcJs')));
+    });
+
+    test('one pair beats ace high', () {
+      expect(five('2s2h7d5c4h'), greaterThan(five('AsKd9c6h3s')));
+    });
+
+    test('ace high beats the worst high card', () {
+      final aceHigh = five('As6d4c3h2s');
+      final sevenHigh = five('7s5h4d3c2h');
+      expect(aceHigh.category, HandCategory.highCard);
+      expect(sevenHigh.category, HandCategory.highCard);
+      expect(aceHigh.tiebreakers, ['A', '6', '4', '3', '2']);
+      expect(sevenHigh.tiebreakers, ['7', '5', '4', '3', '2']);
+      expect(aceHigh, greaterThan(sevenHigh));
+    });
+
+    test('card order does not change the value', () {
+      expect(five('2h3h4h5hAh'), equals(five('Ah5h4h3h2h')));
+      expect(five('KcKdKhAsAc'), equals(five('AsAcKcKdKh')));
+    });
+
+    test('does not mutate the caller list', () {
+      final hand = cards('2cAsKdQhJs');
+      final original = [...hand];
+      HandEvaluator.evaluateFiveCards(hand);
+      expect(hand, original);
+    });
+
+    test('two pair aces and kings beat a pair of aces', () {
+      final pair = five('AsAhKdQcJs');
+      final twoPair = five('AsAdKsKhQd');
+      expect(twoPair, greaterThan(pair));
+    });
+
+    test('that comparison does not throw in either direction', () {
+      final pair = five('AsAhKdQcJs');
+      final twoPair = five('AsAdKsKhQd');
+      expect(() => pair.compareTo(twoPair), returnsNormally);
+      expect(() => twoPair.compareTo(pair), returnsNormally);
     });
   });
 
-  group('evaluate validation', () {
-    test('rejects fewer than 5 or more than 7 cards', () {
-      expect(() => eval('AhKhQhJh'), throwsArgumentError);
-      expect(() => eval('AhKhQhJhTh9h8h7h'), throwsArgumentError);
+  group('evaluateFiveCards validation', () {
+    test('rejects a hand that is not five cards', () {
+      expect(() => five('AsKsQsJs'), throwsArgumentError);
+      expect(() => five('AsKsQsJsTs9s'), throwsArgumentError);
+      expect(
+        () => HandEvaluator.evaluateFiveCards(const []),
+        throwsArgumentError,
+      );
     });
 
     test('rejects duplicate cards', () {
-      expect(() => eval('AhAhQhJhTh'), throwsArgumentError);
+      expect(() => five('AsAhAdAcAs'), throwsArgumentError);
+      expect(() => five('AhAhKdQcJs'), throwsArgumentError);
     });
   });
 
-  group('winners', () {
-    List<int> winners(List<String> hands, String board) =>
-        HandEvaluator.winners([for (final h in hands) cards(h)], cards(board));
+  group('evaluate', () {
+    HandValue showdown(String hole, String board) =>
+        HandEvaluator.evaluate(Hand.fromString(hole), cards(board));
 
-    test('the best hand wins', () {
-      expect(winners(['AhAd', 'KhKd'], '2c7s9dJc3h'), [0]);
-      expect(winners(['AhAd', 'KhKd'], '2c7s9dKc3h'), [1]);
+    test('flop uses both hole cards and the three board cards', () {
+      final value = showdown('AsKs', 'QsJsTs');
+      expect(value.category, HandCategory.straightFlush);
+      expect(value.tiebreakers, ['A']);
     });
 
-    test('a kicker decides', () {
-      expect(winners(['AhQd', 'AcJd'], 'As7s9d2c3h'), [0]);
+    test('turn drops the one board card that is not in the best hand', () {
+      final value = showdown('Ah2c', 'KhQhJh9h');
+      expect(value.category, HandCategory.flush);
+      expect(value.tiebreakers, ['A', 'K', 'Q', 'J', '9']);
     });
 
-    test('the pot is split when the board plays', () {
-      expect(winners(['2h3d', '4c5d'], 'AsKsQsJsTs'), [0, 1]);
+    test('river royal flush using both hole cards', () {
+      final value = showdown('AsKs', 'QsJsTs2c3d');
+      expect(value.category, HandCategory.straightFlush);
+      expect(value.tiebreakers, ['A']);
     });
 
-    test('the pot is split when the best five cards tie', () {
-      // Both play A-A-K-Q-J; the second hole cards do not matter.
-      expect(winners(['Ah2d', 'Ac3d'], 'AsKdQcJh7s'), [0, 1]);
+    test('river quads can leave a hole card out', () {
+      final value = showdown('As2c', 'AhAdAcKdQh');
+      expect(value.category, HandCategory.fourOfAKind);
+      expect(value.tiebreakers, ['A', 'K']);
     });
 
-    test('only the tied best hands split the pot', () {
-      expect(winners(['Ah2d', 'KcKh', 'Ac3d'], 'AsKdQcJh7s'), [1]);
-      expect(winners(['Th2d', '8c8h', 'Tc3d'], 'AsKdQcJh7s'), [0, 2]);
+    test('player can play the board', () {
+      final value = showdown('2c3d', 'AsKsQsJsTs');
+      expect(value.category, HandCategory.straightFlush);
+      expect(value.tiebreakers, ['A']);
     });
 
-    test('works with many hands', () {
-      expect(winners(['AhAd', 'KhKd', 'QhQd', 'JhJd', 'ThTd'], '2c3c4s8s9c'), [
-        0,
-      ]);
+    test('picks a full house out of seven cards', () {
+      final value = showdown('AsAh', 'AdKdKcQsJs');
+      expect(value.category, HandCategory.fullHouse);
+      expect(value.tiebreakers, ['A', 'K']);
     });
 
-    test('rejects invalid input', () {
-      expect(() => winners([], 'AsKdQcJh7s'), throwsArgumentError);
-      expect(() => winners(['AhAd'], 'AsKdQcJh'), throwsArgumentError);
-      expect(() => winners(['Ah'], 'AsKdQcJh7s'), throwsArgumentError);
+    test('two hands that both play the board tie', () {
+      final board = cards('KsQhJdTc9s');
+      final a = HandEvaluator.evaluate(Hand.fromString('2c3d'), board);
+      final b = HandEvaluator.evaluate(Hand.fromString('7h4s'), board);
+      expect(a.category, HandCategory.straight);
+      expect(a, equals(b));
+    });
+
+    test('matches five-card evaluation on the flop', () {
+      final hole = Hand.fromString('9h8h');
+      final board = cards('7h6h5d');
       expect(
-        () => winners(['AhAd', 'AhKd'], '2c3c4s8s9c'),
-        throwsArgumentError,
+        HandEvaluator.evaluate(hole, board),
+        HandEvaluator.evaluateFiveCards([hole.first, hole.second, ...board]),
       );
-      expect(() => winners(['AhAd'], 'Ad3c4s8s9c'), throwsArgumentError);
     });
-  });
 
-  test('all 2,598,960 five-card hands have the known category frequencies '
-      'and 7,462 distinct values', () {
-    final deck = [
-      for (final s in Card.suits)
-        for (final r in Card.ranks) Card(r, s),
-    ];
-    final counts = {for (final c in HandCategory.values) c: 0};
-    final distinct = <HandValue>{};
-    for (var a = 0; a < 52; a++) {
-      for (var b = a + 1; b < 52; b++) {
-        for (var c = b + 1; c < 52; c++) {
-          for (var d = c + 1; d < 52; d++) {
-            for (var e = d + 1; e < 52; e++) {
-              final value = HandEvaluator.evaluateFive([
-                deck[a],
-                deck[b],
-                deck[c],
-                deck[d],
-                deck[e],
-              ]);
-              counts[value.category] = counts[value.category]! + 1;
-              distinct.add(value);
-            }
-          }
-        }
-      }
-    }
-    expect(counts, {
-      HandCategory.straightFlush: 40,
-      HandCategory.fourOfAKind: 624,
-      HandCategory.fullHouse: 3744,
-      HandCategory.flush: 5108,
-      HandCategory.straight: 10200,
-      HandCategory.threeOfAKind: 54912,
-      HandCategory.twoPair: 123552,
-      HandCategory.onePair: 1098240,
-      HandCategory.highCard: 1302540,
+    test('rejects a board that shares a card with the hole cards', () {
+      expect(
+        () => showdown('AsKd', 'AsQhJc'),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('Duplicate'),
+          ),
+        ),
+      );
+      expect(
+        () => showdown('AsKd', 'As2c3d4h5s'),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('Duplicate'),
+          ),
+        ),
+      );
     });
-    expect(distinct.length, 7462);
+
+    test('rejects duplicate board cards', () {
+      expect(
+        () => showdown('AsKd', 'QhQhJc'),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('Duplicate'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects totals other than 5, 6, or 7 cards', () {
+      expect(() => showdown('AsKd', ''), throwsArgumentError);
+      expect(() => showdown('AsKd', 'Qh'), throwsArgumentError);
+      expect(() => showdown('AsKd', 'QhJc'), throwsArgumentError);
+      expect(() => showdown('AsKd', 'QhJcTd9s8h2c'), throwsArgumentError);
+    });
   });
 }
