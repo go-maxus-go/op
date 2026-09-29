@@ -109,13 +109,45 @@ void main() {
       expect(broadway, greaterThan(wheel));
     });
 
-    test('equality agrees with hashCode', () {
-      final a = HandValue(HandCategory.fourOfAKind, ['2', 'A']);
-      final b = HandValue(HandCategory.fourOfAKind, ['A', '2']);
-      if (a == b) {
-        expect(a.hashCode, b.hashCode);
-      }
+    test('aces and fours beat aces and treys with a king kicker', () {
+      final fours = HandValue(HandCategory.twoPair, ['A', '4', '3']);
+      final treys = HandValue(HandCategory.twoPair, ['A', '3', 'K']);
+      expect(fours, greaterThan(treys));
     });
+
+    test('the second trips kicker breaks a tie', () {
+      final five = HandValue(HandCategory.threeOfAKind, ['A', 'K', '5']);
+      final four = HandValue(HandCategory.threeOfAKind, ['A', 'K', '4']);
+      expect(five, greaterThan(four));
+    });
+
+    test('the last pair kicker breaks a tie', () {
+      final five = HandValue(HandCategory.onePair, ['A', 'K', 'Q', '5']);
+      final four = HandValue(HandCategory.onePair, ['A', 'K', 'Q', '4']);
+      expect(five, greaterThan(four));
+    });
+
+    test('the last flush card breaks a tie', () {
+      final nine = HandValue(HandCategory.flush, ['A', 'K', 'Q', 'J', '9']);
+      final eight = HandValue(HandCategory.flush, ['A', 'K', 'Q', 'J', '8']);
+      expect(nine, greaterThan(eight));
+    });
+
+    test('different tiebreaker lists are not equal', () {
+      const shorter = HandValue(HandCategory.onePair, ['A', 'K', 'Q']);
+      const longer = HandValue(HandCategory.onePair, ['A', 'K', 'Q', 'J']);
+      expect(shorter == longer, isFalse);
+      expect(shorter.hashCode, isNot(longer.hashCode));
+    });
+
+    test(
+      'compareTo is antisymmetric when tiebreaker lists differ in length',
+      () {
+        const shorter = HandValue(HandCategory.onePair, ['A', 'K', 'Q']);
+        const longer = HandValue(HandCategory.onePair, ['A', 'K', 'Q', 'J']);
+        expect(longer.compareTo(shorter), -shorter.compareTo(longer));
+      },
+    );
 
     test('toString names the category and tiebreakers', () {
       expect(
@@ -239,6 +271,37 @@ void main() {
       expect(five('2s2h7d5c4h'), greaterThan(five('AsKdQcJh9s')));
     });
 
+    test('ten-high straight', () {
+      final value = five('Ts9h8d7c6s');
+      expect(value.category, HandCategory.straight);
+      expect(value.tiebreakers, ['T']);
+    });
+
+    test('king-high straight beats queen-high', () {
+      expect(five('KsQhJdTc9s'), greaterThan(five('QsJhTd9c8s')));
+    });
+
+    test('quads beat a full house', () {
+      expect(five('AsAhAdAcKs'), greaterThan(five('KsKhKdQcQh')));
+    });
+
+    test('a flush beats a straight', () {
+      expect(five('AsKs9s6s2s'), greaterThan(five('AsKdQcJhTs')));
+    });
+
+    test('aces and fours beat aces and treys at showdown', () {
+      expect(five('AsAh4s4h3d'), greaterThan(five('AsAh3s3hKd')));
+    });
+
+    test('trip kickers compare after the set', () {
+      expect(five('AsAhAdKc2s'), greaterThan(five('AsAhAdQcJs')));
+      expect(five('AsAhAdKc5s'), greaterThan(five('AsAhAdKc4s')));
+    });
+
+    test('the last pair kicker decides the showdown', () {
+      expect(five('AsAhKdQc5s'), greaterThan(five('AsAhKdQc4s')));
+    });
+
     test('straight beats trips', () {
       expect(five('9s8h7d6c5s'), greaterThan(five('AsAhAdKcQs')));
     });
@@ -350,10 +413,28 @@ void main() {
       expect(value.tiebreakers, ['A']);
     });
 
-    test('turn drops the one board card that is not in the best hand', () {
+    test('turn can use the higher hole card and every board card', () {
       final value = showdown('Ah2c', 'KhQhJh9h');
       expect(value.category, HandCategory.flush);
       expect(value.tiebreakers, ['A', 'K', 'Q', 'J', '9']);
+    });
+
+    test('turn keeps both hole cards and drops one board card', () {
+      final value = showdown('Ah5h', 'KhQhJh2c');
+      expect(value.category, HandCategory.flush);
+      expect(value.tiebreakers, ['A', 'K', 'Q', 'J', '5']);
+    });
+
+    test('turn can play only the lower hole card', () {
+      final value = showdown('As9h', 'KhQhJh8h');
+      expect(value.category, HandCategory.flush);
+      expect(value.tiebreakers, ['K', 'Q', 'J', '9', '8']);
+    });
+
+    test('turn plays the later suit of a pocket pair', () {
+      final value = showdown('AdAs', '2d3d4d5d');
+      expect(value.category, HandCategory.straightFlush);
+      expect(value.tiebreakers, ['5']);
     });
 
     test('river royal flush using both hole cards', () {
@@ -366,6 +447,18 @@ void main() {
       final value = showdown('As2c', 'AhAdAcKdQh');
       expect(value.category, HandCategory.fourOfAKind);
       expect(value.tiebreakers, ['A', 'K']);
+    });
+
+    test('river can play only the lower hole card', () {
+      final value = showdown('As9h', 'KhQhJh8h2d');
+      expect(value.category, HandCategory.flush);
+      expect(value.tiebreakers, ['K', 'Q', 'J', '9', '8']);
+    });
+
+    test('river full house can require the lower hole card', () {
+      final value = showdown('AsKd', 'KcKh2d2c2h');
+      expect(value.category, HandCategory.fullHouse);
+      expect(value.tiebreakers, ['K', '2']);
     });
 
     test('player can play the board', () {
@@ -431,6 +524,39 @@ void main() {
           ),
         ),
       );
+      expect(
+        () => showdown('AsKd', 'AsQhJcTd'),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('Duplicate'),
+          ),
+        ),
+      );
+      expect(
+        () => showdown('AsKd', 'QhQhJcTd9s'),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('Duplicate'),
+          ),
+        ),
+      );
+    });
+
+    test('flop of seven-five-four-three-two is that high card', () {
+      final value = showdown('7s5h', '4d3c2s');
+      expect(value.category, HandCategory.highCard);
+      expect(value.tiebreakers, ['7', '5', '4', '3', '2']);
+    });
+
+    test('does not mutate the board', () {
+      final board = cards('KsQhJdTc9s');
+      final original = [...board];
+      HandEvaluator.evaluate(Hand.fromString('2c3d'), board);
+      expect(board, original);
     });
 
     test('rejects totals other than 5, 6, or 7 cards', () {
