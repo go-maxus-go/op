@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide Card;
+import 'background_equity_simulation.dart';
 import 'card.dart';
 import 'deck.dart';
-import 'equity_simulator.dart';
 import 'range_selector_screen.dart';
 
 class EquityHand {
@@ -10,7 +10,9 @@ class EquityHand {
 }
 
 class EquityScreen extends StatefulWidget {
-  const EquityScreen({super.key});
+  final int maxSimulations;
+
+  const EquityScreen({super.key, this.maxSimulations = 100000});
 
   @override
   State<EquityScreen> createState() => _EquityScreenState();
@@ -56,18 +58,21 @@ class HandTarget extends SelectionTarget {
 
 class _EquityScreenState extends State<EquityScreen> {
   static const int _maxHands = 10;
-  static const int _maxSimulations = 100000;
-
-  /// Simulations run between UI updates. Small enough to keep frames smooth.
-  static const int _simulationBatchSize = 100;
 
   List<Card?> _board = List.filled(5, null);
   final List<EquityHand> _hands = [EquityHand(), EquityHand()];
 
   SelectionTarget? _currentSelection;
 
+  BackgroundEquitySimulation? _simulation;
+
+  /// Incremented on every recalculation so a worker that finishes starting
+  /// after the deal has changed is stopped instead of adopted.
+  var _generation = 0;
+
   /// Null when the equity cannot be calculated, e.g. when a range is set.
-  EquitySimulator? _simulator;
+  EquityProgress? _progress;
+  var _isCalculating = false;
 
   @override
   void initState() {
@@ -75,34 +80,68 @@ class _EquityScreenState extends State<EquityScreen> {
     _recalculate();
   }
 
-  /// Restarts the simulation for the current hands and board.
+  @override
+  void dispose() {
+    _generation++;
+    _simulation?.stop();
+    _simulation = null;
+    super.dispose();
+  }
+
+  /// Stops the current simulation and starts one for the hands and board.
   void _recalculate() {
-    _simulator = null;
+    final generation = ++_generation;
+    _simulation?.stop();
+    _simulation = null;
+    _progress = null;
+    _isCalculating = false;
     if (_hands.any((hand) => hand.range.isNotEmpty)) return;
 
-    // final simulator = EquitySimulator(
-    //   hands: [for (final hand in _hands) hand.cards.whereType<Card>().toList()],
-    //   board: _board.whereType<Card>().toList(),
-    //   maxSimulations: _maxSimulations,
-    // );
-    // _simulator = simulator;
-    // _runSimulation(simulator);
+    final Future<BackgroundEquitySimulation> starting;
+    try {
+      starting = BackgroundEquitySimulation.start(
+        hands: [
+          for (final hand in _hands) hand.cards.whereType<Card>().toList(),
+        ],
+        board: _board.whereType<Card>().toList(),
+        maxSimulations: widget.maxSimulations,
+        onProgress: (progress) {
+          if (!mounted || generation != _generation) return;
+          setState(() {
+            _progress = progress;
+            _isCalculating = !progress.isComplete;
+          });
+        },
+        onError: (_) {
+          if (!mounted || generation != _generation) return;
+          setState(() => _isCalculating = false);
+        },
+      );
+    } on ArgumentError {
+      return;
+    }
+    _isCalculating = true;
+    starting.then(
+      (simulation) {
+        if (!mounted || generation != _generation) {
+          simulation.stop();
+        } else {
+          _simulation = simulation;
+        }
+      },
+      onError: (Object _) {
+        if (!mounted || generation != _generation) return;
+        setState(() => _isCalculating = false);
+      },
+    );
   }
 
-  Future<void> _runSimulation(EquitySimulator simulator) async {
-    // while (!simulator.isComplete) {
-    //   await Future<void>.delayed(Duration.zero);
-    //   if (!mounted || !identical(simulator, _simulator)) return;
-    //   setState(() => simulator.run(_simulationBatchSize));
-    // }
+  String _equityText(int handIndex) {
+    final progress = _progress;
+    if (progress == null || progress.simulations == 0) return 'Equity: --%';
+    final equity = progress.equities[handIndex] * 100;
+    return 'Equity: ${equity.toStringAsFixed(2)}%';
   }
-
-  // String _equityText(int handIndex) {
-  // final simulator = _simulator;
-  // if (simulator == null || simulator.simulations == 0) return 'Equity: --%';
-  // final equity = simulator.equities[handIndex] * 100;
-  // return 'Equity: ${equity.toStringAsFixed(2)}%';
-  // }
 
   Set<Card> get _selectedCards {
     final set = <Card>{};
@@ -345,15 +384,15 @@ class _EquityScreenState extends State<EquityScreen> {
                   child: const Text('Range'),
                 ),
                 const SizedBox(width: 8),
-                // Expanded(
-                // child: Text(
-                // _equityText(index),
-                // style: const TextStyle(
-                //   fontSize: 16,
-                //   fontWeight: FontWeight.bold,
-                // ),
-                // ),
-                // ),
+                Expanded(
+                  child: Text(
+                    _equityText(index),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 if (_hands.length > 2)
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.red),
@@ -503,9 +542,9 @@ class _EquityScreenState extends State<EquityScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (_simulator != null)
+                          if (_isCalculating || _progress != null)
                             Text(
-                              'Simulations: ${_simulator!.simulations}',
+                              'Simulations: ${_progress?.simulations ?? 0}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                         ],
