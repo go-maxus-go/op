@@ -31,6 +31,11 @@ class SimulationResults {
     : _equities = List.filled(handsCount, 0.0);
 
   void add(Simulation simulation) {
+    if (simulation.scores.length != _equities.length) {
+      throw ArgumentError(
+        'Expected ${_equities.length} scores, got ${simulation.scores.length}',
+      );
+    }
     if (_simulations >= maxSimulations) {
       throw StateError(
         'Simulation results are complete: $_simulations simulations',
@@ -45,7 +50,7 @@ class SimulationResults {
 
   List<double> get equities {
     if (_simulations == 0) {
-      return _equities.toList();
+      throw StateError('No simulations have been run');
     }
     return _equities.map((e) => e / _simulations).toList();
   }
@@ -64,12 +69,23 @@ class EquitySimulator {
 
   SimulationResults results;
 
+  var _stopRequested = false;
+
   EquitySimulator(this.hands, this.board, {this.maxSimulations = 10000})
     : results = SimulationResults(hands.length, maxSimulations) {
+    if (maxSimulations <= 0) {
+      throw ArgumentError('maxSimulations must be positive: $maxSimulations');
+    }
+    if (hands.isEmpty) {
+      throw ArgumentError('At least one hand is required');
+    }
+
+    var known = 0;
     for (final hand in hands) {
       if (hand.length > 2) {
         throw ArgumentError('A hand has at most 2 cards: $hand');
       }
+      known += hand.length;
       for (final card in hand) {
         if (knownCards.contains(card)) {
           throw ArgumentError('Duplicate card: $card');
@@ -81,37 +97,51 @@ class EquitySimulator {
     if (board.length > 5) {
       throw ArgumentError('The board has at most 5 cards: $board');
     }
+    known += board.length;
     for (final card in board) {
       if (knownCards.contains(card)) {
         throw ArgumentError('Duplicate card: $card');
       }
       knownCards.add(card);
     }
+
+    final cardsToDraw = hands.length * 2 + 5 - known;
+    if (cardsToDraw > 52 - known) {
+      throw ArgumentError('Not enough cards left in the deck to deal $hands');
+    }
   }
 
-  void run(Function(List<double> equities) callback, {notifyEvery = 100}) {
-    for (simulations = 0; simulations < maxSimulations; simulations++) {
-      final deck = Deck();
+  void run(Function(List<double> equities) callback, {int notifyEvery = 100}) {
+    if (results.isComplete) {
+      throw StateError(
+        'Simulation results are complete: $simulations simulations',
+      );
+    }
 
+    _stopRequested = false;
+    while (simulations < maxSimulations && !_stopRequested) {
+      final deck = Deck();
+      final dealBoard = [...board];
       final completedHands = <Hand>[];
 
       for (final hand in hands) {
-        while (hand.length < 2) {
-          hand.add(_draw(deck));
+        final deal = [...hand];
+        while (deal.length < 2) {
+          deal.add(_draw(deck));
         }
-        completedHands.add(Hand(hand[0], hand[1]));
+        completedHands.add(Hand(deal[0], deal[1]));
       }
 
-      while (board.length < 5) {
-        board.add(_draw(deck));
+      while (dealBoard.length < 5) {
+        dealBoard.add(_draw(deck));
       }
 
       final evaluations = completedHands
-          .map((hand) => HandEvaluator.evaluate(hand, board))
+          .map((hand) => HandEvaluator.evaluate(hand, dealBoard))
           .toList();
       results.add(Simulation(evaluations));
 
-      if (simulations % notifyEvery == 0) {
+      if (simulations++ % notifyEvery == 0) {
         callback(results.equities);
       }
     }
@@ -120,7 +150,7 @@ class EquitySimulator {
   }
 
   void stop() {
-    simulations = maxSimulations;
+    _stopRequested = true;
   }
 
   Card _draw(Deck deck) {
