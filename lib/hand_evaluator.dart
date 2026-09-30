@@ -22,6 +22,8 @@ class HandValue implements Comparable<HandValue> {
   /// between hands of the same [category], most significant first.
   ///
   /// Hands of the same category always have the same number of tiebreakers.
+  ///
+  ///
   final List<String> tiebreakers;
 
   const HandValue(this.category, this.tiebreakers);
@@ -39,6 +41,7 @@ class HandValue implements Comparable<HandValue> {
     final othertb = other.tiebreakers
         .map((t) => Card.ranks.indexOf(t))
         .toList();
+    assert(thistb.length == othertb.length);
     for (var i = 0; i < thistb.length; i++) {
       if (thistb[i] > othertb[i]) {
         return 1;

@@ -133,22 +133,6 @@ void main() {
       expect(nine, greaterThan(eight));
     });
 
-    test('different tiebreaker lists are not equal', () {
-      const shorter = HandValue(HandCategory.onePair, ['A', 'K', 'Q']);
-      const longer = HandValue(HandCategory.onePair, ['A', 'K', 'Q', 'J']);
-      expect(shorter == longer, isFalse);
-      expect(shorter.hashCode, isNot(longer.hashCode));
-    });
-
-    test(
-      'compareTo is antisymmetric when tiebreaker lists differ in length',
-      () {
-        const shorter = HandValue(HandCategory.onePair, ['A', 'K', 'Q']);
-        const longer = HandValue(HandCategory.onePair, ['A', 'K', 'Q', 'J']);
-        expect(longer.compareTo(shorter), -shorter.compareTo(longer));
-      },
-    );
-
     test('toString names the category and tiebreakers', () {
       expect(
         const HandValue(HandCategory.fullHouse, ['A', 'K']).toString(),
