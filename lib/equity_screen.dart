@@ -80,29 +80,29 @@ class _EquityScreenState extends State<EquityScreen> {
     _simulator = null;
     if (_hands.any((hand) => hand.range.isNotEmpty)) return;
 
-    final simulator = EquitySimulator(
-      hands: [for (final hand in _hands) hand.cards.whereType<Card>().toList()],
-      board: _board.whereType<Card>().toList(),
-      maxSimulations: _maxSimulations,
-    );
-    _simulator = simulator;
-    _runSimulation(simulator);
+    // final simulator = EquitySimulator(
+    //   hands: [for (final hand in _hands) hand.cards.whereType<Card>().toList()],
+    //   board: _board.whereType<Card>().toList(),
+    //   maxSimulations: _maxSimulations,
+    // );
+    // _simulator = simulator;
+    // _runSimulation(simulator);
   }
 
   Future<void> _runSimulation(EquitySimulator simulator) async {
-    while (!simulator.isComplete) {
-      await Future<void>.delayed(Duration.zero);
-      if (!mounted || !identical(simulator, _simulator)) return;
-      setState(() => simulator.run(_simulationBatchSize));
-    }
+    // while (!simulator.isComplete) {
+    //   await Future<void>.delayed(Duration.zero);
+    //   if (!mounted || !identical(simulator, _simulator)) return;
+    //   setState(() => simulator.run(_simulationBatchSize));
+    // }
   }
 
-  String _equityText(int handIndex) {
-    final simulator = _simulator;
-    if (simulator == null || simulator.simulations == 0) return 'Equity: --%';
-    final equity = simulator.equities[handIndex] * 100;
-    return 'Equity: ${equity.toStringAsFixed(2)}%';
-  }
+  // String _equityText(int handIndex) {
+  // final simulator = _simulator;
+  // if (simulator == null || simulator.simulations == 0) return 'Equity: --%';
+  // final equity = simulator.equities[handIndex] * 100;
+  // return 'Equity: ${equity.toStringAsFixed(2)}%';
+  // }
 
   Set<Card> get _selectedCards {
     final set = <Card>{};
@@ -345,15 +345,15 @@ class _EquityScreenState extends State<EquityScreen> {
                   child: const Text('Range'),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _equityText(index),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                // Expanded(
+                // child: Text(
+                // _equityText(index),
+                // style: const TextStyle(
+                //   fontSize: 16,
+                //   fontWeight: FontWeight.bold,
+                // ),
+                // ),
+                // ),
                 if (_hands.length > 2)
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.red),

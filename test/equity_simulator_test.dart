@@ -1,272 +1,311 @@
-// import 'dart:math';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:optimal_poker/card.dart';
+import 'package:optimal_poker/equity_simulator.dart';
+import 'package:optimal_poker/hand.dart';
+import 'package:optimal_poker/hand_evaluator.dart';
 
-// import 'package:flutter_test/flutter_test.dart';
-// import 'package:optimal_poker/card.dart';
-// import 'package:optimal_poker/equity_simulator.dart';
-// import 'package:optimal_poker/hand_evaluator.dart';
+/// Parses concatenated cards, e.g. 'AhKd2c'.
+List<Card> cards(String s) => [
+  for (var i = 0; i < s.length; i += 2) Card(s[i], s[i + 1]),
+];
 
-// /// Parses concatenated cards, e.g. 'AhKd2c'.
-// List<Card> cards(String s) => [
-//   for (var i = 0; i < s.length; i += 2) Card(s[i], s[i + 1]),
-// ];
+const aces = HandValue(HandCategory.onePair, ['A', 'K', 'Q', 'J']);
+const kings = HandValue(HandCategory.onePair, ['K', 'Q', 'J', 'T']);
+const broadway = HandValue(HandCategory.straight, ['A']);
 
-// EquitySimulator simulator(
-//   List<String> hands, {
-//   String board = '',
-//   int maxSimulations = 1000,
-//   int seed = 1,
-// }) => EquitySimulator(
-//   hands: [for (final h in hands) cards(h)],
-//   board: cards(board),
-//   maxSimulations: maxSimulations,
-//   random: Random(seed),
-// );
+EquitySimulator simulator(
+  List<String> hands, {
+  String board = '',
+  int maxSimulations = 20,
+}) => EquitySimulator(
+  [for (final hand in hands) cards(hand)],
+  cards(board),
+  maxSimulations: maxSimulations,
+);
 
-// List<double> simulate(
-//   List<String> hands, {
-//   String board = '',
-//   int simulations = 100000,
-// }) {
-//   final sim = simulator(hands, board: board, maxSimulations: simulations);
-//   sim.run(simulations);
-//   return sim.equities;
-// }
+void main() {
+  group('Simulation.calculateScores', () {
+    test('the best hand takes the pot', () {
+      expect(Simulation.calculateScores([kings, aces]), [0, 1]);
+    });
 
-// /// Exact equities computed by enumerating every way to deal the unknown
-// /// cards, independently of [EquitySimulator].
-// List<double> exactEquities(List<String> hands, {String board = ''}) {
-//   final known = [for (final h in hands) ...cards(h), ...cards(board)];
-//   final deck = [
-//     for (final s in Card.suits)
-//       for (final r in Card.ranks)
-//         if (!known.contains(Card(r, s))) Card(r, s),
-//   ];
-//   final shares = List.filled(hands.length, 0.0);
-//   var deals = 0;
+    test('tied hands split the pot', () {
+      expect(Simulation.calculateScores([broadway, broadway]), [0.5, 0.5]);
+    });
 
-//   void deal(List<List<Card>> dealtHands, List<Card> dealtBoard) {
-//     final used = {...dealtBoard, for (final h in dealtHands) ...h};
-//     final handIndex = dealtHands.indexWhere((h) => h.length < 2);
-//     if (handIndex == -1 && dealtBoard.length == 5) {
-//       final winners = HandEvaluator.winners(dealtHands, dealtBoard);
-//       for (final w in winners) {
-//         shares[w] += 1 / winners.length;
-//       }
-//       deals++;
-//       return;
-//     }
-//     for (final card in deck) {
-//       if (used.contains(card)) continue;
-//       if (handIndex != -1) {
-//         final next = [...dealtHands];
-//         next[handIndex] = [...next[handIndex], card];
-//         deal(next, dealtBoard);
-//       } else {
-//         deal(dealtHands, [...dealtBoard, card]);
-//       }
-//     }
-//   }
+    test('only the tied best hands are paid', () {
+      expect(Simulation.calculateScores([broadway, kings, broadway]), [
+        0.5,
+        0,
+        0.5,
+      ]);
+    });
 
-//   deal([for (final h in hands) cards(h)], cards(board));
-//   return [for (final s in shares) s / deals];
-// }
+    test('three tied hands share the pot equally', () {
+      final scores = Simulation.calculateScores([broadway, broadway, broadway]);
+      expect(scores, [1 / 3, 1 / 3, 1 / 3]);
+      expect(scores.reduce((a, b) => a + b), closeTo(1, 1e-12));
+    });
 
-// void main() {
-//   group('validation', () {
-//     test('requires at least two hands', () {
-//       expect(() => simulator([]), throwsArgumentError);
-//       expect(() => simulator(['AhAd']), throwsArgumentError);
-//     });
+    test('a single hand wins', () {
+      expect(Simulation.calculateScores([aces]), [1]);
+    });
 
-//     test('rejects hands with more than two cards', () {
-//       expect(() => simulator(['AhAdAc', 'KhKd']), throwsArgumentError);
-//     });
+    test('rejects an empty showdown', () {
+      expect(() => Simulation.calculateScores([]), throwsStateError);
+    });
+  });
 
-//     test('rejects a board with more than five cards', () {
-//       expect(
-//         () => simulator(['AhAd', 'KhKd'], board: '2c3c4c5c6c7c'),
-//         throwsArgumentError,
-//       );
-//     });
+  group('SimulationResults', () {
+    test('equities are the mean score of each hand', () {
+      final results = SimulationResults(2, 10);
+      results.add(Simulation([aces, kings]));
+      results.add(Simulation([broadway, broadway]));
+      expect(results.equities, [0.75, 0.25]);
+      expect(results.isComplete, isFalse);
+    });
 
-//     test('rejects duplicate cards', () {
-//       expect(() => simulator(['AhAd', 'AhKd']), throwsArgumentError);
-//       expect(() => simulator(['AhAh', 'KhKd']), throwsArgumentError);
-//       expect(
-//         () => simulator(['AhAd', 'KhKd'], board: '2c3cAd'),
-//         throwsArgumentError,
-//       );
-//       expect(
-//         () => simulator(['AhAd', 'KhKd'], board: '2c3c2c'),
-//         throwsArgumentError,
-//       );
-//     });
+    test('is complete once maxSimulations have been added', () {
+      final results = SimulationResults(1, 2);
+      results.add(Simulation([aces]));
+      results.add(Simulation([aces]));
+      expect(results.isComplete, isTrue);
+      expect(() => results.add(Simulation([aces])), throwsStateError);
+    });
 
-//     test('rejects more hands than one deck can deal', () {
-//       expect(() => simulator(List.filled(23, '')), returnsNormally);
-//       expect(() => simulator(List.filled(24, '')), throwsArgumentError);
-//     });
+    test('equities require at least one simulation', () {
+      final results = SimulationResults(2, 10);
+      expect(() => results.equities, throwsStateError);
+    });
 
-//     test('rejects a non-positive maxSimulations', () {
-//       expect(
-//         () => simulator(['AhAd', 'KhKd'], maxSimulations: 0),
-//         throwsArgumentError,
-//       );
-//     });
-//   });
+    test('rejects a score list for a different number of hands', () {
+      final results = SimulationResults(2, 10);
+      expect(() => results.add(Simulation([broadway])), throwsArgumentError);
+    });
+  });
 
-//   group('running', () {
-//     test('equities are unavailable before any simulation', () {
-//       expect(() => simulator(['AhAd', 'KhKd']).equities, throwsStateError);
-//     });
+  group('EquitySimulator validation', () {
+    test('rejects a hand with more than two cards', () {
+      expect(() => simulator(['AhAdAc', 'KsKc']), throwsArgumentError);
+    });
 
-//     test('run stops at maxSimulations', () {
-//       final sim = simulator(['AhAd', 'KhKd'], maxSimulations: 250);
-//       expect(sim.isComplete, isFalse);
-//       expect(sim.run(100), 100);
-//       expect(sim.simulations, 100);
-//       expect(sim.run(100), 100);
-//       expect(sim.run(100), 50);
-//       expect(sim.simulations, 250);
-//       expect(sim.isComplete, isTrue);
-//       expect(sim.run(100), 0);
-//       expect(sim.simulations, 250);
-//     });
+    test('rejects a board with more than five cards', () {
+      expect(
+        () => simulator(['AhAd', 'KsKc'], board: '2c3d4h5s6c7d'),
+        throwsArgumentError,
+      );
+    });
 
-//     test('run with a non-positive count does nothing', () {
-//       final sim = simulator(['AhAd', 'KhKd']);
-//       expect(sim.run(0), 0);
-//       expect(sim.run(-5), 0);
-//       expect(sim.simulations, 0);
-//     });
+    test('rejects duplicate cards', () {
+      expect(() => simulator(['AhAd', 'AhKd']), throwsArgumentError);
+      expect(() => simulator(['AhAh', 'KsKc']), throwsArgumentError);
+      expect(
+        () => simulator(['AhAd', 'KsKc'], board: '2c3dAd'),
+        throwsArgumentError,
+      );
+      expect(
+        () => simulator(['AhAd', 'KsKc'], board: '2c3d2c'),
+        throwsArgumentError,
+      );
+    });
 
-//     test('equities always sum to one', () {
-//       final sim = simulator(['AhAd', 'Kh', '', '7c2d'], maxSimulations: 5000);
-//       for (var i = 0; i < 5; i++) {
-//         sim.run(1000);
-//         final sum = sim.equities.reduce((a, b) => a + b);
-//         expect(sum, closeTo(1, 1e-9));
-//       }
-//     });
+    test('rejects an empty list of hands', () {
+      expect(() => EquitySimulator([], []), throwsArgumentError);
+    });
 
-//     test('the same seed gives the same result', () {
-//       final a = simulator(['AhAd', ''], seed: 42)..run(1000);
-//       final b = simulator(['AhAd', ''], seed: 42)..run(1000);
-//       expect(a.equities, b.equities);
-//     });
+    test('rejects a deal that cannot be made from one deck', () {
+      expect(
+        () => EquitySimulator(List.generate(23, (_) => <Card>[]), []),
+        returnsNormally,
+      );
+      expect(
+        () => EquitySimulator(List.generate(24, (_) => <Card>[]), []),
+        throwsArgumentError,
+      );
+    });
 
-//     test('does not modify or depend on the input lists', () {
-//       final hand = cards('AhAd');
-//       final board = cards('2c3c');
-//       final sim = EquitySimulator(
-//         hands: [hand, cards('KhKd')],
-//         board: board,
-//         maxSimulations: 10,
-//       );
-//       hand.clear();
-//       board.clear();
-//       expect(sim.hands[0], cards('AhAd'));
-//       expect(sim.board, cards('2c3c'));
-//       sim.run(10);
-//       expect(hand, isEmpty);
-//       expect(board, isEmpty);
-//       expect(() => sim.hands[0].add(Card('2', 'd')), throwsUnsupportedError);
-//     });
-//   });
+    test('rejects a non-positive maxSimulations', () {
+      expect(
+        () => simulator(['AhAd', 'KsKc'], maxSimulations: 0),
+        throwsArgumentError,
+      );
+      expect(
+        () => simulator(['AhAd', 'KsKc'], maxSimulations: -1),
+        throwsArgumentError,
+      );
+    });
+  });
 
-//   group('when every card is known', () {
-//     test('a single simulation is exact', () {
-//       final sim = simulator(
-//         ['AhAd', 'KhKd'],
-//         board: '2c7s9dJc3h',
-//         maxSimulations: 1000,
-//       );
-//       expect(sim.maxSimulations, 1);
-//       expect(sim.run(1000), 1);
-//       expect(sim.isComplete, isTrue);
-//       expect(sim.equities, [1, 0]);
-//     });
+  group('known showdowns', () {
+    test('pair of aces beats pair of kings', () {
+      final sim = simulator(
+        ['AhAd', 'KsKc'],
+        board: '2c7d9hJc3s',
+        maxSimulations: 5,
+      );
+      sim.run((_) {});
+      expect(sim.simulations, 5);
+      expect(sim.results.isComplete, isTrue);
+      expect(sim.results.equities, [1, 0]);
+    });
 
-//     test('ties split the pot evenly', () {
-//       final sim = simulator(['2h3d', '4c5d', '6h7d'], board: 'AsKsQsJsTs');
-//       sim.run(1);
-//       expect(sim.equities, [1 / 3, 1 / 3, 1 / 3]);
-//     });
+    test('the second hand wins when it is best', () {
+      final sim = simulator(
+        ['KsKc', 'AhAd'],
+        board: '2c7d9hJc3s',
+        maxSimulations: 3,
+      );
+      sim.run((_) {});
+      expect(sim.results.equities, [0, 1]);
+    });
 
-//     test('only the tied best hands split the pot', () {
-//       final sim = simulator(['Th2d', '8c8h', 'Tc3d'], board: 'AsKdQcJh7s');
-//       sim.run(1);
-//       expect(sim.equities, [0.5, 0, 0.5]);
-//     });
-//   });
+    test('a made board is a three-way tie', () {
+      final sim = simulator(
+        ['2h3d', '4c5s', '6d7c'],
+        board: 'AsKsQsJsTs',
+        maxSimulations: 4,
+      );
+      final seen = <List<double>>[];
+      sim.run(seen.add, notifyEvery: 100);
+      expect(seen, hasLength(2));
+      for (final equity in sim.results.equities) {
+        expect(equity, closeTo(1 / 3, 1e-12));
+      }
+    });
 
-//   group('matches exact enumeration', () {
-//     // 100k simulations give a standard error below 0.0016 for any equity,
-//     // so a 0.01 tolerance is more than six standard errors.
-//     const tolerance = 0.01;
+    test('only the tied best hands split the pot', () {
+      final sim = simulator(
+        ['Th2d', '8c8h', 'Tc3d'],
+        board: 'AsKdQcJh7s',
+        maxSimulations: 2,
+      );
+      sim.run((_) {});
+      expect(sim.results.equities, [0.5, 0, 0.5]);
+    });
 
-//     void expectMatchesExact(List<String> hands, {String board = ''}) {
-//       final exact = exactEquities(hands, board: board);
-//       final simulated = simulate(hands, board: board);
-//       for (var i = 0; i < hands.length; i++) {
-//         expect(
-//           simulated[i],
-//           closeTo(exact[i], tolerance),
-//           reason: 'hand $i: simulated $simulated, exact $exact',
-//         );
-//       }
-//     }
+    test('one fully known hand has equity 1', () {
+      final sim = simulator(['AsAh'], board: 'KdQcJh2c3d', maxSimulations: 2);
+      sim.run((_) {});
+      expect(sim.results.equities, [1]);
+    });
 
-//     test('river to come, drawing to two outs', () {
-//       // Only the two remaining aces save AA: 2/44.
-//       final exact = exactEquities(['AsAh', 'KdKh'], board: '2c7d9hKs');
-//       expect(exact[0], closeTo(2 / 44, 1e-12));
-//       expectMatchesExact(['AsAh', 'KdKh'], board: '2c7d9hKs');
-//     });
+    test('a second run is rejected once results are complete', () {
+      final sim = simulator(
+        ['AhAd', 'KsKc'],
+        board: '2c7d9hJc3s',
+        maxSimulations: 2,
+      );
+      sim.run((_) {});
+      expect(() => sim.run((_) {}), throwsStateError);
+    });
 
-//     test('turn and river to come with a flush draw', () {
-//       expectMatchesExact(['AhKh', 'QcQd'], board: '2h7h9c');
-//     });
+    test('leaves a complete deal unchanged', () {
+      final hole = cards('AhAd');
+      final board = cards('2c7d9hJc3s');
+      final sim = EquitySimulator(
+        [hole, cards('KsKc')],
+        board,
+        maxSimulations: 2,
+      );
+      sim.run((_) {});
+      expect(hole, cards('AhAd'));
+      expect(board, cards('2c7d9hJc3s'));
+    });
+  });
 
-//     test('one random hole card and the river to come', () {
-//       expectMatchesExact(['As', 'KdKc'], board: '2c7d9hQs');
-//     });
+  group('incomplete deals', () {
+    test('does not modify the caller lists', () {
+      final hole = cards('As');
+      final board = cards('2c7d9hKs');
+      final sim = EquitySimulator(
+        [hole, cards('KdKh')],
+        board,
+        maxSimulations: 5,
+      );
+      sim.run((_) {});
+      expect([hole.length, board.length], [1, 4]);
+    });
 
-//     test('a random hand against a made hand on the turn', () {
-//       expectMatchesExact(['', 'AhAd'], board: 'Kc7d2h3s');
-//     });
+    test('re-deals the river on every simulation', () {
+      // Kings have a set. Aces win only when one of the two remaining aces
+      // arrives: 2/44.
+      final sim = simulator(
+        ['AsAh', 'KdKh'],
+        board: '2c7d9hKs',
+        maxSimulations: 5000,
+      );
+      sim.run((_) {});
+      expect(sim.results.equities[0], closeTo(2 / 44, 0.015));
+      expect(sim.results.equities.reduce((a, b) => a + b), closeTo(1, 1e-9));
+    });
 
-//     test('three hands with a split-pot heavy board', () {
-//       expectMatchesExact(['Ah2c', 'Ad3c', 'KsQs'], board: 'AsJsTd9c');
-//     });
+    test('turn and river are re-dealt', () {
+      const hands = ['AhKh', 'QcQd'];
+      const board = '2h7h9c';
+      final exact = _exactBoardRunouts(hands, board);
+      final sim = simulator(hands, board: board, maxSimulations: 4000);
+      sim.run((_) {});
+      for (var i = 0; i < hands.length; i++) {
+        expect(
+          sim.results.equities[i],
+          closeTo(exact[i], 0.04),
+          reason: 'hand $i: simulated ${sim.results.equities}, exact $exact',
+        );
+      }
+    });
 
-//     test('only some board cards known, e.g. only the turn', () {
-//       expectMatchesExact(['AhAd', 'KhKd'], board: 'Ac2s3s4s');
-//     });
-//   });
+    test('stop finishes after the current simulation', () {
+      final sim = simulator(
+        ['AhAd', 'KsKc'],
+        board: '2c7d9hJc3s',
+        maxSimulations: 100,
+      );
+      var calls = 0;
+      sim.run((_) {
+        calls++;
+        if (calls == 1) sim.stop();
+      }, notifyEvery: 1);
+      expect(sim.simulations, 1);
+      expect(sim.results.isComplete, isFalse);
+    });
+  });
+}
 
-//   group('matches well-known preflop equities', () {
-//     test('two random hands are even', () {
-//       final equities = simulate(['', '']);
-//       expect(equities[0], closeTo(0.5, 0.01));
-//     });
+/// Exact equity of [hands] when only board cards are missing.
+List<double> _exactBoardRunouts(List<String> hands, String boardText) {
+  final hole = [for (final hand in hands) Hand.fromString(hand)];
+  final board = cards(boardText);
+  final known = {
+    for (final hand in hole) ...[hand.first, hand.second],
+    ...board,
+  };
+  final deck = [
+    for (final suit in Card.suits)
+      for (final rank in Card.ranks)
+        if (!known.contains(Card(rank, suit))) Card(rank, suit),
+  ];
+  final need = 5 - board.length;
+  final shares = List.filled(hands.length, 0.0);
+  var deals = 0;
 
-//     test('three random hands are even', () {
-//       for (final equity in simulate(['', '', ''])) {
-//         expect(equity, closeTo(1 / 3, 0.01));
-//       }
-//     });
+  void deal(int start, List<Card> extra) {
+    if (extra.length == need) {
+      final full = [...board, ...extra];
+      final values = [
+        for (final hand in hole) HandEvaluator.evaluate(hand, full),
+      ];
+      final scores = Simulation.calculateScores(values);
+      for (var i = 0; i < scores.length; i++) {
+        shares[i] += scores[i];
+      }
+      deals++;
+      return;
+    }
+    for (var i = start; i < deck.length; i++) {
+      deal(i + 1, [...extra, deck[i]]);
+    }
+  }
 
-//     test('AA against a random hand is about 85.2%', () {
-//       expect(simulate(['AhAd', ''])[0], closeTo(0.852, 0.01));
-//     });
-
-//     test('AA against KK is about 82%', () {
-//       expect(simulate(['AhAd', 'KsKc'])[0], closeTo(0.82, 0.01));
-//     });
-
-//     test('22 against AKo is a coin flip, about 53%', () {
-//       expect(simulate(['2c2d', 'AhKs'])[0], closeTo(0.53, 0.015));
-//     });
-//   });
-// }
+  deal(0, []);
+  return [for (final share in shares) share / deals];
+}
