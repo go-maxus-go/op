@@ -14,7 +14,7 @@ void main() {
     final updates = <EquityProgress>[];
     final done = Completer<void>();
     await BackgroundEquitySimulation.start(
-      hands: [cards('AhAd'), cards('KsKc')],
+      ranges: ['AhAd', 'KsKc'],
       board: cards('2c7d9hJc3s'),
       maxSimulations: 500,
       onProgress: (progress) {
@@ -42,7 +42,7 @@ void main() {
   test('simulates the unknown cards in the background', () async {
     final done = Completer<EquityProgress>();
     await BackgroundEquitySimulation.start(
-      hands: [cards('AsAh'), cards('KdKh')],
+      ranges: ['AsAh', 'KdKh'],
       board: cards('2c7d9hKs'),
       maxSimulations: 5000,
       onProgress: (progress) {
@@ -60,7 +60,7 @@ void main() {
     var stopped = false;
     late BackgroundEquitySimulation simulation;
     simulation = await BackgroundEquitySimulation.start(
-      hands: [cards('AhAd'), <Card>[]],
+      ranges: ['AhAd', ''],
       board: [],
       maxSimulations: 10000000,
       updateInterval: const Duration(milliseconds: 5),
@@ -84,7 +84,7 @@ void main() {
 
   test('stop is safe to call more than once', () async {
     final simulation = await BackgroundEquitySimulation.start(
-      hands: [cards('AhAd'), <Card>[]],
+      ranges: ['AhAd', ''],
       board: [],
       maxSimulations: 10000000,
       onProgress: (_) {},
@@ -93,11 +93,26 @@ void main() {
     expect(simulation.stop, returnsNormally);
   });
 
+  test('simulates ranges in the background', () async {
+    final done = Completer<EquityProgress>();
+    await BackgroundEquitySimulation.start(
+      ranges: ['AA', 'KK'],
+      board: [],
+      maxSimulations: 5000,
+      onProgress: (progress) {
+        if (progress.isComplete) done.complete(progress);
+      },
+    );
+
+    final result = await done.future.timeout(const Duration(seconds: 30));
+    expect(result.equities[0], closeTo(0.82, 0.03));
+  });
+
   test('rejects an invalid deal before starting a worker', () {
     expect(
       () => BackgroundEquitySimulation.start(
-        hands: [cards('AhAd'), cards('AhKd')],
-        board: [],
+        ranges: ['AhAd', 'KK'],
+        board: cards('Ah2c3d'),
         maxSimulations: 10,
         onProgress: (_) {},
       ),

@@ -1,7 +1,9 @@
+import 'dart:math';
+
 import 'card.dart';
 import 'hand_evaluator.dart';
-import 'deck.dart';
 import 'hand.dart';
+import 'utils/range_parser.dart';
 
 class Simulation {
   final List<HandValue> values;
@@ -58,58 +60,90 @@ class SimulationResults {
   bool get isComplete => _simulations >= maxSimulations;
 }
 
+/// Monte Carlo equity of ranges such as `88+, AKs`, `AsKh` or `As`.
+///
+/// Every simulation deals one random combo from each range, then completes
+/// the board from the cards that are neither on the board nor dealt to a
+/// player. Players may share a card, e.g. `AsKh` vs `AsKs`.
 class EquitySimulator {
-  final List<List<Card>> hands;
+  /// The combos of each range that do not use a board card.
+  final List<List<Hand>> ranges;
   final List<Card> board;
 
   final int maxSimulations;
   var simulations = 0;
 
-  final Set<Card> knownCards = {};
-
   SimulationResults results;
 
+  final Random _random;
   var _stopRequested = false;
 
-  EquitySimulator(this.hands, this.board, {this.maxSimulations = 10000})
-    : results = SimulationResults(hands.length, maxSimulations) {
+  /// An empty range stands for any two cards.
+  ///
+  /// Throws [ArgumentError] when a range cannot be parsed or has no combo
+  /// left on [board].
+  EquitySimulator(
+    List<String> ranges,
+    List<Card> board, {
+    this.maxSimulations = 10000,
+    Random? random,
+  }) : board = _validateBoard(board),
+       ranges = [for (final range in ranges) combosOnBoard(range, board)],
+       results = SimulationResults(ranges.length, maxSimulations),
+       _random = random ?? Random() {
     if (maxSimulations <= 0) {
       throw ArgumentError('maxSimulations must be positive: $maxSimulations');
     }
-    if (hands.isEmpty) {
-      throw ArgumentError('At least one hand is required');
+    if (ranges.isEmpty) {
+      throw ArgumentError('At least one range is required');
+    }
+    if (ranges.length * 2 + 5 > _deck.length) {
+      throw ArgumentError('Not enough cards in the deck to deal $ranges');
+    }
+  }
+
+  /// Expands [range] and drops the combos that use a card of [board].
+  static List<Hand> combosOnBoard(String range, List<Card> board) {
+    final List<Hand> combos;
+    if (range.trim().isEmpty) {
+      combos = _anyTwoCards;
+    } else {
+      try {
+        combos = RangeParser.rangeToHands(range);
+      } catch (e) {
+        throw ArgumentError.value(range, 'range', 'Invalid range: $e');
+      }
     }
 
-    var known = 0;
-    for (final hand in hands) {
-      if (hand.length > 2) {
-        throw ArgumentError('A hand has at most 2 cards: $hand');
-      }
-      known += hand.length;
-      for (final card in hand) {
-        if (knownCards.contains(card)) {
-          throw ArgumentError('Duplicate card: $card');
-        }
-        knownCards.add(card);
-      }
+    final possible = [
+      for (final hand in combos)
+        if (!board.contains(hand.first) && !board.contains(hand.second)) hand,
+    ];
+    if (possible.isEmpty) {
+      throw ArgumentError.value(range, 'range', 'No combos left on $board');
     }
+    return possible;
+  }
 
+  static List<Card> _validateBoard(List<Card> board) {
     if (board.length > 5) {
       throw ArgumentError('The board has at most 5 cards: $board');
     }
-    known += board.length;
-    for (final card in board) {
-      if (knownCards.contains(card)) {
-        throw ArgumentError('Duplicate card: $card');
-      }
-      knownCards.add(card);
+    if (board.toSet().length != board.length) {
+      throw ArgumentError('Duplicate card on the board: $board');
     }
-
-    final cardsToDraw = hands.length * 2 + 5 - known;
-    if (cardsToDraw > 52 - known) {
-      throw ArgumentError('Not enough cards left in the deck to deal $hands');
-    }
+    return [...board];
   }
+
+  static final List<Card> _deck = [
+    for (final suit in Card.suits)
+      for (final rank in Card.ranks) Card(rank, suit),
+  ];
+
+  static final List<Hand> _anyTwoCards = [
+    for (var i = 0; i < _deck.length; i++)
+      for (var j = i + 1; j < _deck.length; j++) Hand(_deck[i], _deck[j]),
+  ];
 
   void run(Function(List<double> equities) callback, {int notifyEvery = 100}) {
     if (results.isComplete) {
@@ -120,23 +154,19 @@ class EquitySimulator {
 
     _stopRequested = false;
     while (simulations < maxSimulations && !_stopRequested) {
-      final deck = Deck();
-      final dealBoard = [...board];
-      final completedHands = <Hand>[];
-
-      for (final hand in hands) {
-        final deal = [...hand];
-        while (deal.length < 2) {
-          deal.add(_draw(deck));
-        }
-        completedHands.add(Hand(deal[0], deal[1]));
+      final dead = {...board};
+      final dealtHands = <Hand>[];
+      for (final range in ranges) {
+        final hand = range[_random.nextInt(range.length)];
+        dealtHands.add(hand);
+        dead
+          ..add(hand.first)
+          ..add(hand.second);
       }
 
-      while (dealBoard.length < 5) {
-        dealBoard.add(_draw(deck));
-      }
+      final dealBoard = [...board, ..._draw(5 - board.length, dead)];
 
-      final evaluations = completedHands
+      final evaluations = dealtHands
           .map((hand) => HandEvaluator.evaluate(hand, dealBoard))
           .toList();
       results.add(Simulation(evaluations));
@@ -153,12 +183,18 @@ class EquitySimulator {
     _stopRequested = true;
   }
 
-  Card _draw(Deck deck) {
-    while (true) {
-      final card = deck.nextCard();
-      if (!knownCards.contains(card)) {
-        return card;
-      }
+  /// Draws [count] distinct random cards that are not in [dead].
+  List<Card> _draw(int count, Set<Card> dead) {
+    final live = [
+      for (final card in _deck)
+        if (!dead.contains(card)) card,
+    ];
+    for (var i = 0; i < count; i++) {
+      final j = i + _random.nextInt(live.length - i);
+      final card = live[j];
+      live[j] = live[i];
+      live[i] = card;
     }
+    return live.sublist(0, count);
   }
 }

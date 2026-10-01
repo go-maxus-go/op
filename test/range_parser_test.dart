@@ -115,6 +115,56 @@ void main() {
     ]);
   });
 
+  test('Expands a single card', () {
+    final combos = RangeParser.expandRange('As');
+    expect(combos, hasLength(51));
+    expect(combos.toSet(), hasLength(51));
+    expect(combos, everyElement(contains('As')));
+    expect(combos.take(4), ['AsAh', 'AsAc', 'AsAd', 'AsKs']);
+    expect(combos.last, 'As2d');
+    expect(combos, isNot(contains('AsAs')));
+  });
+
+  test('Expands a single card into normalized combos', () {
+    final combos = RangeParser.expandRange('7h');
+    expect(combos, hasLength(51));
+    expect(combos, contains('Ad7h'));
+    expect(combos, contains('7s7h'));
+    expect(combos, contains('7h7c'));
+    expect(combos, contains('7h2s'));
+    for (final combo in combos) {
+      expect(RangeParser.normalizeCombo(combo), combo);
+    }
+  });
+
+  test('Expands a single card mixed with other tokens', () {
+    expect(RangeParser.expandRange('Kd, QQ'), hasLength(51 + 6));
+    expect(RangeParser.rangeToHands('Kd, KdKs, AKo'), hasLength(51 + 12 - 3));
+    expect(RangeParser.rangeToHands('As'), hasLength(51));
+  });
+
+  test('Rejects malformed tokens', () {
+    for (final range in [
+      'A',
+      'Ax',
+      'Zs',
+      'As+',
+      'AsK',
+      'AAs',
+      'AAo',
+      'AsAs',
+      'AKx',
+      'AsKh+',
+      'AsKhQd',
+    ]) {
+      expect(
+        () => RangeParser.expandRange(range),
+        throwsA(anything),
+        reason: range,
+      );
+    }
+  });
+
   test('Range to hands', () {
     expect(RangeParser.rangeToHands('AKs'), [
       Hand(Card('A', 's'), Card('K', 's')),
@@ -131,10 +181,7 @@ void main() {
   });
 
   test('Range from combos collapses consecutive hands', () {
-    expect(
-      RangeParser.rangeFromCombos(RangeParser.expandRange('QQ+')),
-      'QQ+',
-    );
+    expect(RangeParser.rangeFromCombos(RangeParser.expandRange('QQ+')), 'QQ+');
     expect(
       RangeParser.rangeFromCombos(RangeParser.expandRange('AKs, 88')),
       '88, AKs',

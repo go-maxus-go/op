@@ -70,7 +70,8 @@ class _EquityScreenState extends State<EquityScreen> {
   /// after the deal has changed is stopped instead of adopted.
   var _generation = 0;
 
-  /// Null when the equity cannot be calculated, e.g. when a range is set.
+  /// Null when the equity cannot be calculated, e.g. when a range has no
+  /// combos left on the board.
   EquityProgress? _progress;
   var _isCalculating = false;
 
@@ -95,13 +96,15 @@ class _EquityScreenState extends State<EquityScreen> {
     _simulation = null;
     _progress = null;
     _isCalculating = false;
-    if (_hands.any((hand) => hand.range.isNotEmpty)) return;
 
     final Future<BackgroundEquitySimulation> starting;
     try {
       starting = BackgroundEquitySimulation.start(
-        hands: [
-          for (final hand in _hands) hand.cards.whereType<Card>().toList(),
+        ranges: [
+          for (final hand in _hands)
+            hand.range.isNotEmpty
+                ? hand.range.join(', ')
+                : hand.cards.whereType<Card>().join(),
         ],
         board: _board.whereType<Card>().toList(),
         maxSimulations: widget.maxSimulations,

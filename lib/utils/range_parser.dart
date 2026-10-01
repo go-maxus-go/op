@@ -17,6 +17,9 @@ import '../hand.dart';
 ///
 /// Full hand:
 /// - `AsKh`: full hand.
+///
+/// Single card:
+/// - `As`: any hand holding the Ace of spades (all 51 combos).
 class RangeParser {
   static List<String> parseHandRange(String rangeStr) {
     final List<String> tokens = [];
@@ -44,6 +47,7 @@ class RangeParser {
         expandedHands.addAll(expandPairToken(token));
         expandedHands.addAll(expandOffsuitToken(token));
         expandedHands.addAll(expandSuitToken(token));
+        expandedHands.addAll(expandCardToken(token));
 
         hands.addAll(expandedHands);
         if (expandedHands.isEmpty) {
@@ -138,6 +142,9 @@ class RangeParser {
     if (!Card.ranks.contains(token[0]) || !Card.ranks.contains(token[1])) {
       throw 'Invalid rank $token';
     }
+    if (token[0] == token[1]) {
+      throw 'Invalid hand $token';
+    }
 
     for (var i = 0; i < Card.suits.length; i++) {
       for (var j = 0; j < Card.suits.length; j++) {
@@ -158,11 +165,34 @@ class RangeParser {
     if (!Card.ranks.contains(token[0]) || !Card.ranks.contains(token[1])) {
       throw 'Invalid rank $token';
     }
+    if (token[0] == token[1]) {
+      throw 'Invalid hand $token';
+    }
 
     for (var i = 0; i < Card.suits.length; i++) {
       hands.add('${token[0]}${Card.suits[i]}${token[1]}${Card.suits[i]}');
     }
 
+    return hands;
+  }
+
+  /// Expands a single card (`As`) to every combo holding it, higher rank first.
+  static List<String> expandCardToken(String token) {
+    final List<String> hands = [];
+    if (token.length != 2 || !Card.suits.contains(token[1])) {
+      return hands;
+    }
+    if (!Card.ranks.contains(token[0])) {
+      throw 'Invalid card $token';
+    }
+
+    for (final rank in Card.ranks.reversed) {
+      for (final suit in Card.suits) {
+        if (rank != token[0] || suit != token[1]) {
+          hands.add(normalizeCombo('$token$rank$suit'));
+        }
+      }
+    }
     return hands;
   }
 

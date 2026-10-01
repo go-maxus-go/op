@@ -32,22 +32,20 @@ class BackgroundEquitySimulation {
   ///
   /// Throws [ArgumentError] synchronously when the deal is invalid.
   static Future<BackgroundEquitySimulation> start({
-    required List<List<Card>> hands,
+    required List<String> ranges,
     required List<Card> board,
     required int maxSimulations,
     required void Function(EquityProgress progress) onProgress,
     void Function(Object error)? onError,
     Duration updateInterval = const Duration(milliseconds: 100),
   }) {
-    EquitySimulator(hands, board, maxSimulations: maxSimulations);
+    EquitySimulator(ranges, board, maxSimulations: maxSimulations);
 
     final simulation = BackgroundEquitySimulation._(onProgress, onError);
     simulation._port.listen(simulation._onMessage);
     final job = _Job(
       simulation._port.sendPort,
-      [
-        for (final hand in hands) [...hand],
-      ],
+      [...ranges],
       [...board],
       maxSimulations,
       updateInterval.inMicroseconds,
@@ -103,14 +101,14 @@ class BackgroundEquitySimulation {
 
 class _Job {
   final SendPort port;
-  final List<List<Card>> hands;
+  final List<String> ranges;
   final List<Card> board;
   final int maxSimulations;
   final int updateIntervalMicros;
 
   _Job(
     this.port,
-    this.hands,
+    this.ranges,
     this.board,
     this.maxSimulations,
     this.updateIntervalMicros,
@@ -119,7 +117,7 @@ class _Job {
 
 void _work(_Job job) {
   final simulator = EquitySimulator(
-    job.hands,
+    job.ranges,
     job.board,
     maxSimulations: job.maxSimulations,
   );

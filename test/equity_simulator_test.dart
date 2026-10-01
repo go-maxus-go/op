@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/card.dart';
 import 'package:optimal_poker/equity_simulator.dart';
@@ -14,14 +16,20 @@ const kings = HandValue(HandCategory.onePair, ['K', 'Q', 'J', 'T']);
 const broadway = HandValue(HandCategory.straight, ['A']);
 
 EquitySimulator simulator(
-  List<String> hands, {
+  List<String> ranges, {
   String board = '',
   int maxSimulations = 20,
+  Random? random,
 }) => EquitySimulator(
-  [for (final hand in hands) cards(hand)],
+  ranges,
   cards(board),
   maxSimulations: maxSimulations,
+  random: random,
 );
+
+List<String> combos(EquitySimulator sim, int range) => [
+  for (final hand in sim.ranges[range]) '$hand',
+];
 
 void main() {
   group('Simulation.calculateScores', () {
@@ -96,9 +104,29 @@ void main() {
       );
     });
 
-    test('rejects duplicate cards', () {
-      expect(() => simulator(['AhAd', 'AhKd']), throwsArgumentError);
+    test('rejects an unparsable range', () {
       expect(() => simulator(['AhAh', 'KsKc']), throwsArgumentError);
+      expect(() => simulator(['AK', 'KsKc']), throwsArgumentError);
+      expect(() => simulator(['Ax', 'KsKc']), throwsArgumentError);
+      expect(() => simulator(['AsKh, 88+, X', 'KsKc']), throwsArgumentError);
+    });
+
+    test('rejects a range without combos on the board', () {
+      expect(
+        () => simulator(['AhAd', 'KsKc'], board: 'Ah'),
+        throwsArgumentError,
+      );
+      expect(
+        () => simulator(['As', 'KsKc'], board: '2cAs'),
+        throwsArgumentError,
+      );
+      expect(
+        () => simulator(['AhKh, AhKs', 'QQ'], board: 'Ah2c3d'),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects duplicate board cards', () {
       expect(
         () => simulator(['AhAd', 'KsKc'], board: '2c3dAd'),
         throwsArgumentError,
@@ -114,12 +142,9 @@ void main() {
     });
 
     test('rejects a deal that cannot be made from one deck', () {
+      expect(() => EquitySimulator(List.filled(23, ''), []), returnsNormally);
       expect(
-        () => EquitySimulator(List.generate(23, (_) => <Card>[]), []),
-        returnsNormally,
-      );
-      expect(
-        () => EquitySimulator(List.generate(24, (_) => <Card>[]), []),
+        () => EquitySimulator(List.filled(24, ''), []),
         throwsArgumentError,
       );
     });
@@ -200,30 +225,23 @@ void main() {
     });
 
     test('leaves a complete deal unchanged', () {
-      final hole = cards('AhAd');
+      final ranges = ['AhAd', 'KsKc'];
       final board = cards('2c7d9hJc3s');
-      final sim = EquitySimulator(
-        [hole, cards('KsKc')],
-        board,
-        maxSimulations: 2,
-      );
+      final sim = EquitySimulator(ranges, board, maxSimulations: 2);
       sim.run((_) {});
-      expect(hole, cards('AhAd'));
+      expect(ranges, ['AhAd', 'KsKc']);
       expect(board, cards('2c7d9hJc3s'));
     });
   });
 
   group('incomplete deals', () {
     test('does not modify the caller lists', () {
-      final hole = cards('As');
+      final ranges = ['As', 'KdKh'];
       final board = cards('2c7d9hKs');
-      final sim = EquitySimulator(
-        [hole, cards('KdKh')],
-        board,
-        maxSimulations: 5,
-      );
+      final sim = EquitySimulator(ranges, board, maxSimulations: 5);
       sim.run((_) {});
-      expect([hole.length, board.length], [1, 4]);
+      expect(ranges, ['As', 'KdKh']);
+      expect(board, cards('2c7d9hKs'));
     });
 
     test('re-deals the river on every simulation', () {
@@ -267,6 +285,129 @@ void main() {
       }, notifyEvery: 1);
       expect(sim.simulations, 1);
       expect(sim.results.isComplete, isFalse);
+    });
+  });
+
+  group('range combos', () {
+    test('drops combos that use a board card', () {
+      final sim = simulator(['AhKh, AhKs', 'QQ'], board: '2s7hKh');
+      expect(combos(sim, 0), ['AhKs']);
+    });
+
+    test('a pair keeps only the combos without the board card', () {
+      final sim = simulator(['AA', 'KK'], board: 'Ad');
+      expect(combos(sim, 0), unorderedEquals(['AsAh', 'AsAc', 'AhAc']));
+      expect(combos(sim, 1), hasLength(6));
+    });
+
+    test('a single card is every hand holding it', () {
+      final sim = simulator(['As', 'Kd'], board: 'KsQc2h');
+      expect(combos(sim, 0), hasLength(51 - 3));
+      expect(combos(sim, 0), everyElement(contains('As')));
+      expect(combos(sim, 0), isNot(contains('AsKs')));
+      expect(combos(sim, 1), hasLength(51 - 3));
+      expect(combos(sim, 1), everyElement(contains('Kd')));
+    });
+
+    test('a single card works for the lowest card too', () {
+      final sim = simulator(['2d', 'AA']);
+      expect(combos(sim, 0), hasLength(51));
+      expect(combos(sim, 0), contains('As2d'));
+      expect(combos(sim, 0), contains('2s2d'));
+    });
+
+    test('an empty range is any two cards', () {
+      expect(combos(simulator(['', '  ']), 0), hasLength(1326));
+      expect(combos(simulator(['', '  ']), 1), hasLength(1326));
+      expect(
+        combos(simulator(['', 'AA'], board: '2c3d4h'), 0),
+        hasLength(1176),
+      );
+    });
+
+    test('duplicate combos are counted once', () {
+      final sim = simulator(['AsKh, AKo, AhKs', 'QQ']);
+      expect(combos(sim, 0), hasLength(12));
+    });
+
+    test('players may share a card of their ranges', () {
+      expect(() => simulator(['AhAd', 'AhKd']), returnsNormally);
+      expect(() => simulator(['AA', 'AA']), returnsNormally);
+    });
+  });
+
+  group('range showdowns', () {
+    test('a range filtered to one combo always plays it', () {
+      // Only AhKs is possible: one pair of kings against queens.
+      final sim = simulator(
+        ['AhKh, AhKs', 'QcQd'],
+        board: '2s7hKh3c4d',
+        maxSimulations: 50,
+      );
+      sim.run((_) {});
+      expect(sim.results.equities, [1, 0]);
+    });
+
+    test('a combo is picked at random in every simulation', () {
+      // Aces win and 72 loses on this board, so the range wins half the time.
+      final sim = simulator(
+        ['AsAh, 7h2c', 'KsKh'],
+        board: '3c4d8sJhQd',
+        maxSimulations: 4000,
+      );
+      sim.run((_) {});
+      expect(sim.results.equities[0], closeTo(0.5, 0.05));
+    });
+
+    test('shared cards are not dealt to the board', () {
+      // Both hands hold the As, so the board can never pair the ace.
+      final sim = simulator(
+        ['AsKh', 'AsKs'],
+        board: 'Qd7c2h',
+        maxSimulations: 2000,
+      );
+      sim.run((_) {});
+      final exact = _exactBoardRunouts(['AsKh', 'AsKs'], 'Qd7c2h');
+      expect(sim.results.equities[0], closeTo(exact[0], 0.03));
+      expect(sim.results.equities[1], closeTo(exact[1], 0.03));
+    });
+
+    test('dealt combos are dead cards for the board', () {
+      // Kings win only when the last king arrives on the river: 1/44.
+      final sim = simulator(
+        ['AA', 'KK'],
+        board: 'AsKs2c3d',
+        maxSimulations: 5000,
+      );
+      sim.run((_) {});
+      expect(sim.results.equities[1], closeTo(1 / 44, 0.01));
+    });
+
+    test('aces against kings preflop', () {
+      final sim = simulator(['AA', 'KK'], maxSimulations: 5000);
+      sim.run((_) {});
+      expect(sim.results.equities[0], closeTo(0.82, 0.03));
+    });
+
+    test('random hands share the pot equally', () {
+      final sim = simulator(['', ''], maxSimulations: 5000);
+      sim.run((_) {});
+      expect(sim.results.equities[0], closeTo(0.5, 0.03));
+    });
+
+    test('the same seed gives the same equities', () {
+      List<double> run() {
+        final sim = simulator(
+          ['QQ+, AKs', 'As', ''],
+          board: '2h',
+          maxSimulations: 500,
+          random: Random(7),
+        );
+        sim.run((_) {});
+        return sim.results.equities;
+      }
+
+      expect(run(), run());
     });
   });
 }
