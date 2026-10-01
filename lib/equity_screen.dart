@@ -12,7 +12,7 @@ class EquityHand {
 class EquityScreen extends StatefulWidget {
   final int maxSimulations;
 
-  const EquityScreen({super.key, this.maxSimulations = 100000});
+  const EquityScreen({super.key, this.maxSimulations = 25000});
 
   @override
   State<EquityScreen> createState() => _EquityScreenState();
@@ -140,7 +140,7 @@ class _EquityScreenState extends State<EquityScreen> {
     final progress = _progress;
     if (progress == null || progress.simulations == 0) return 'Equity: --%';
     final equity = progress.equities[handIndex] * 100;
-    return 'Equity: ${equity.toStringAsFixed(2)}%';
+    return 'Equity: ${equity.toStringAsFixed(1)}%';
   }
 
   Set<Card> get _selectedCards {
