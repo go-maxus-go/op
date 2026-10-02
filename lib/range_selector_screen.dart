@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'utils/range_parser.dart';
 import 'theme.dart';
 import 'card.dart';
+import 'range_editor_screen.dart';
 
 class RangeSelectorScreen extends StatefulWidget {
   final Set<String> initialRange;
@@ -17,54 +18,33 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
   bool _isSelecting = true;
   final Set<String> _draggedHands = {};
   String? _activeHand;
-  late final TextEditingController _rangeController;
-  String? _rangeError;
-  bool _ignoreRangeTextChange = false;
 
   @override
   void initState() {
     super.initState();
     _selectedCombos = Set<String>.from(widget.initialRange);
-    _rangeController = TextEditingController(
-      text: RangeParser.rangeFromCombos(_selectedCombos),
+  }
+
+  String _selectedPercentText() {
+    final percentage = (_selectedCombos.length / 1326) * 100;
+    return '${percentage.toStringAsFixed(2)}%';
+  }
+
+  void _openRangeEditor() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RangeEditorScreen(
+          initialName: _selectedPercentText(),
+          initialHands: RangeParser.rangeFromCombos(_selectedCombos),
+          onHandsChanged: (combos) {
+            setState(() {
+              _selectedCombos = combos;
+            });
+          },
+        ),
+      ),
     );
-  }
-
-  @override
-  void dispose() {
-    _rangeController.dispose();
-    super.dispose();
-  }
-
-  void _setRangeTextFromCombos() {
-    final formatted = RangeParser.rangeFromCombos(_selectedCombos);
-    if (_rangeController.text == formatted) {
-      return;
-    }
-    _ignoreRangeTextChange = true;
-    _rangeController.value = TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-    _ignoreRangeTextChange = false;
-    _rangeError = null;
-  }
-
-  void _onRangeTextChanged(String value) {
-    if (_ignoreRangeTextChange) {
-      return;
-    }
-    try {
-      final parsed = RangeParser.expandRangeToComboSet(value);
-      setState(() {
-        _selectedCombos = parsed;
-        _rangeError = null;
-      });
-    } catch (_) {
-      setState(() {
-        _rangeError = 'Invalid range';
-      });
-    }
   }
 
   String _getHandAt(int row, int col) {
@@ -131,7 +111,6 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
           } else {
             _selectedCombos.removeAll(combos);
           }
-          _setRangeTextFromCombos();
         });
       }
     }
@@ -151,288 +130,308 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     }
   }
 
-  void _clearRange() {
-    setState(() {
-      _selectedCombos.clear();
-      _activeHand = null;
-      _setRangeTextFromCombos();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final chartColors = Theme.of(context).extension<ChartColors>()!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Range'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: _clearRange,
-            tooltip: 'Clear Range',
-          ),
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () {
-              Navigator.pop(context, _selectedCombos);
-            },
-            tooltip: 'Done',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Select Range')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final screenWidth = constraints.maxWidth;
-                    // Cap at 800 for desktop, otherwise take full width
-                    final gridSize = screenWidth > 800 ? 800.0 : screenWidth;
-
-                    return Center(
-                      child: Listener(
-                        onPointerDown: (event) =>
-                            _startDrag(event.localPosition, gridSize),
-                        onPointerMove: (event) =>
-                            _handleDrag(event.localPosition, gridSize),
-                        onPointerUp: (event) => _draggedHands.clear(),
-                        child: SizedBox(
-                          width: gridSize,
-                          height: gridSize,
-                          child: GridView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 13,
-                                  childAspectRatio: 1.0,
-                                  crossAxisSpacing: 1,
-                                  mainAxisSpacing: 1,
-                                ),
-                            itemCount: 13 * 13,
-                            itemBuilder: (context, index) {
-                              int row = index ~/ 13;
-                              int col = index % 13;
-                              String hand = _getHandAt(row, col);
-                              final combos = _getCombosForHand(hand);
-                              final selectedCount = combos
-                                  .where((c) => _selectedCombos.contains(c))
-                                  .length;
-                              final isFullySelected =
-                                  selectedCount == combos.length;
-                              final isPartiallySelected =
-                                  selectedCount > 0 &&
-                                  selectedCount < combos.length;
-                              final isSelected = selectedCount > 0;
-
-                              Color selectedColor;
-                              if (row == col) {
-                                selectedColor = chartColors.pairColor;
-                              } else if (col > row) {
-                                selectedColor = chartColors.suitedColor;
-                              } else {
-                                selectedColor = chartColors.offsuitColor;
-                              }
-
-                              BoxDecoration decoration;
-                              if (isFullySelected) {
-                                decoration = BoxDecoration(
-                                  color: selectedColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                  border: _activeHand == hand
-                                      ? Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        )
-                                      : null,
-                                );
-                              } else if (isPartiallySelected) {
-                                decoration = BoxDecoration(
-                                  color: selectedColor.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(2),
-                                  border: _activeHand == hand
-                                      ? Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        )
-                                      : null,
-                                );
-                              } else {
-                                decoration = BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(2),
-                                  border: _activeHand == hand
-                                      ? Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        )
-                                      : null,
-                                );
-                              }
-
-                              return Container(
-                                decoration: decoration,
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      hand,
-                                      style: TextStyle(
-                                        color: isSelected ? Colors.white : null,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_note),
+                            tooltip: 'Range',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: _openRangeEditor,
                           ),
-                        ),
+                          Text(
+                            'Selected: ${_selectedPercentText()}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Builder(
-                  builder: (context) {
-                    double percentage = (_selectedCombos.length / 1326) * 100;
-                    return Text(
-                      'Selected: ${percentage.toStringAsFixed(2)}%',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: TextField(
-                  controller: _rangeController,
-                  onChanged: _onRangeTextChanged,
-                  onEditingComplete: () {
-                    setState(_setRangeTextFromCombos);
-                  },
-                  minLines: 1,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: 'AKs, QQ+, 87s',
-                    labelText: 'Range',
-                    errorText: _rangeError,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              if (_activeHand != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 8.0,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Combinations for $_activeHand',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Builder(
-                        builder: (context) {
-                          final comboRows = RangeParser.comboLayoutForHand(
-                            _activeHand!,
-                          );
-                          return FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: comboRows.map((row) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: row.map((combo) {
-                                      final isSelected = _selectedCombos
-                                          .contains(combo);
-                                      final c1 = Card(combo[0], combo[1]);
-                                      final c2 = Card(combo[2], combo[3]);
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final screenWidth = constraints.maxWidth;
+                          // Cap at 800 for desktop, otherwise take full width
+                          final gridSize = screenWidth > 800
+                              ? 800.0
+                              : screenWidth;
 
-                                      return GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            if (isSelected) {
-                                              _selectedCombos.remove(combo);
-                                            } else {
-                                              _selectedCombos.add(combo);
-                                            }
-                                            _setRangeTextFromCombos();
-                                          });
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 4.0,
-                                          ),
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? Colors.blue.withValues(
-                                                    alpha: 0.2,
-                                                  )
-                                                : Colors.transparent,
-                                            border: Border.all(
+                          return Center(
+                            child: Listener(
+                              onPointerDown: (event) =>
+                                  _startDrag(event.localPosition, gridSize),
+                              onPointerMove: (event) =>
+                                  _handleDrag(event.localPosition, gridSize),
+                              onPointerUp: (event) => _draggedHands.clear(),
+                              child: SizedBox(
+                                width: gridSize,
+                                height: gridSize,
+                                child: GridView.builder(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 13,
+                                        childAspectRatio: 1.0,
+                                        crossAxisSpacing: 1,
+                                        mainAxisSpacing: 1,
+                                      ),
+                                  itemCount: 13 * 13,
+                                  itemBuilder: (context, index) {
+                                    int row = index ~/ 13;
+                                    int col = index % 13;
+                                    String hand = _getHandAt(row, col);
+                                    final combos = _getCombosForHand(hand);
+                                    final selectedCount = combos
+                                        .where(
+                                          (c) => _selectedCombos.contains(c),
+                                        )
+                                        .length;
+                                    final isFullySelected =
+                                        selectedCount == combos.length;
+                                    final isPartiallySelected =
+                                        selectedCount > 0 &&
+                                        selectedCount < combos.length;
+                                    final isSelected = selectedCount > 0;
+
+                                    Color selectedColor;
+                                    if (row == col) {
+                                      selectedColor = chartColors.pairColor;
+                                    } else if (col > row) {
+                                      selectedColor = chartColors.suitedColor;
+                                    } else {
+                                      selectedColor = chartColors.offsuitColor;
+                                    }
+
+                                    BoxDecoration decoration;
+                                    if (isFullySelected) {
+                                      decoration = BoxDecoration(
+                                        color: selectedColor,
+                                        borderRadius: BorderRadius.circular(2),
+                                        border: _activeHand == hand
+                                            ? Border.all(
+                                                color: Colors.white,
+                                                width: 2,
+                                              )
+                                            : null,
+                                      );
+                                    } else if (isPartiallySelected) {
+                                      decoration = BoxDecoration(
+                                        color: selectedColor.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(2),
+                                        border: _activeHand == hand
+                                            ? Border.all(
+                                                color: Colors.white,
+                                                width: 2,
+                                              )
+                                            : null,
+                                      );
+                                    } else {
+                                      decoration = BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(2),
+                                        border: _activeHand == hand
+                                            ? Border.all(
+                                                color: Colors.white,
+                                                width: 2,
+                                              )
+                                            : null,
+                                      );
+                                    }
+
+                                    return Container(
+                                      decoration: decoration,
+                                      child: Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            hand,
+                                            style: TextStyle(
                                               color: isSelected
-                                                  ? Colors.blue
-                                                  : Colors.grey,
-                                              width: isSelected ? 2 : 1,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
+                                                  ? Colors.white
+                                                  : null,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Image.asset(
-                                                c1.assetPath,
-                                                width: 45,
-                                                height: 63,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    if (_activeHand != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 8.0,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Combinations for $_activeHand',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Builder(
+                              builder: (context) {
+                                final comboRows =
+                                    RangeParser.comboLayoutForHand(
+                                      _activeHand!,
+                                    );
+                                return FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: comboRows.map((row) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8.0,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: row.map((combo) {
+                                            final isSelected = _selectedCombos
+                                                .contains(combo);
+                                            final c1 = Card(combo[0], combo[1]);
+                                            final c2 = Card(combo[2], combo[3]);
+
+                                            return GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  if (isSelected) {
+                                                    _selectedCombos.remove(
+                                                      combo,
+                                                    );
+                                                  } else {
+                                                    _selectedCombos.add(combo);
+                                                  }
+                                                });
+                                              },
+                                              child: Container(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 4.0,
+                                                    ),
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? Colors.blue.withValues(
+                                                          alpha: 0.2,
+                                                        )
+                                                      : Colors.transparent,
+                                                  border: Border.all(
+                                                    color: isSelected
+                                                        ? Colors.blue
+                                                        : Colors.grey,
+                                                    width: isSelected ? 2 : 1,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Image.asset(
+                                                      c1.assetPath,
+                                                      width: 45,
+                                                      height: 63,
+                                                    ),
+                                                    const SizedBox(width: 2),
+                                                    Image.asset(
+                                                      c2.assetPath,
+                                                      width: 45,
+                                                      height: 63,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                              const SizedBox(width: 2),
-                                              Image.asset(
-                                                c2.assetPath,
-                                                width: 45,
-                                                height: 63,
-                                              ),
-                                            ],
-                                          ),
+                                            );
+                                          }).toList(),
                                         ),
                                       );
                                     }).toList(),
                                   ),
                                 );
-                              }).toList(),
+                              },
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
-              const SizedBox(height: 32),
-            ],
-          ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      textStyle: const TextStyle(fontSize: 16),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 16),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      textStyle: const TextStyle(fontSize: 16),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context, _selectedCombos);
+                    },
+                    icon: const Icon(Icons.check),
+                    label: const Text('Apply'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

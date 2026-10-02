@@ -14,34 +14,58 @@ Widget _wrap(Widget child) {
   );
 }
 
+Finder _fieldWithLabel(String label) {
+  return find.byWidgetPredicate(
+    (widget) => widget is TextField && widget.decoration?.labelText == label,
+  );
+}
+
 void main() {
   testWidgets('Typing a range selects matching hands on the chart', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      _wrap(const RangeSelectorScreen(initialRange: {})),
-    );
+    await tester.pumpWidget(_wrap(const RangeSelectorScreen(initialRange: {})));
 
     expect(find.text('Selected: 0.00%'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
 
-    await tester.enterText(find.byType(TextField), 'AKs');
+    await tester.tap(find.byTooltip('Range'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<TextField>(_fieldWithLabel('Range name')).controller?.text,
+      '0.00%',
+    );
+
+    await tester.enterText(_fieldWithLabel('Range hands'), 'AKs');
     await tester.pump();
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
 
     expect(find.text('Selected: 0.30%'), findsOneWidget);
   });
 
-  testWidgets('Selecting a hand updates the range text field', (
+  testWidgets('Selecting a hand fills the range hands field', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      _wrap(const RangeSelectorScreen(initialRange: {})),
-    );
+    await tester.pumpWidget(_wrap(const RangeSelectorScreen(initialRange: {})));
 
     await tester.tap(find.text('AA'));
     await tester.pump();
 
-    final field = tester.widget<TextField>(find.byType(TextField));
-    expect(field.controller?.text, 'AA');
     expect(find.text('Selected: 0.45%'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Range'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<TextField>(_fieldWithLabel('Range name')).controller?.text,
+      '0.45%',
+    );
+    expect(
+      tester.widget<TextField>(_fieldWithLabel('Range hands')).controller?.text,
+      'AA',
+    );
   });
 }
