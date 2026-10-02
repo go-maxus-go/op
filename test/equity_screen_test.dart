@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/equity_screen.dart';
+import 'package:optimal_poker/range_chart.dart';
+import 'package:optimal_poker/theme.dart';
 
 /// Lets the background isolate deliver messages until [done] holds.
 Future<void> pumpUntil(
@@ -91,6 +93,39 @@ void main() {
 
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
     expect(shownEquities(tester), hasLength(2));
+  });
+
+  testWidgets('applied range is shown as a chart and can be reset', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: AppTheme.lightColorScheme,
+          extensions: [AppTheme.lightChartColors],
+        ),
+        home: const EquityScreen(maxSimulations: 1000),
+      ),
+    );
+    expect(find.byType(RangeChartImage), findsNothing);
+
+    await tester.tap(find.text('Range').first);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.text('AA'));
+    await tester.pump();
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(RangeChartImage), findsOneWidget);
+    expect(find.text('0.45%'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Reset Hand'));
+    await tester.pump();
+
+    expect(find.byType(RangeChartImage), findsNothing);
+    expect(find.byTooltip('Reset Hand'), findsNothing);
   });
 
   testWidgets('leaving the screen stops the simulation', (tester) async {

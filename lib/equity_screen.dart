@@ -211,6 +211,29 @@ class _EquityScreenState extends State<EquityScreen> {
     });
   }
 
+  String _handPercentText(EquityHand hand) {
+    final int combos;
+    if (hand.range.isNotEmpty) {
+      combos = hand.range.length;
+    } else {
+      combos = switch (hand.cards.whereType<Card>().length) {
+        2 => 1,
+        1 => 51,
+        _ => 1326,
+      };
+    }
+    return '${(combos / 1326 * 100).toStringAsFixed(2)}%';
+  }
+
+  void _resetHand(int index) {
+    setState(() {
+      _hands[index]
+        ..range = {}
+        ..cards = [null, null];
+      _recalculate();
+    });
+  }
+
   void _removeHand(int index) {
     setState(() {
       _hands.removeAt(index);
@@ -350,7 +373,16 @@ class _EquityScreenState extends State<EquityScreen> {
                     target: HandTarget(index, 1),
                   ),
                 ],
-                const SizedBox(width: 8),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    _handPercentText(hand),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
                 TextButton(
                   onPressed: () async {
                     final result = await Navigator.push(
@@ -390,6 +422,12 @@ class _EquityScreenState extends State<EquityScreen> {
                     ),
                   ),
                 ),
+                if (hand.range.isNotEmpty || hand.cards.any((c) => c != null))
+                  IconButton(
+                    icon: const Icon(Icons.restart_alt),
+                    tooltip: 'Reset Hand',
+                    onPressed: () => _resetHand(index),
+                  ),
                 if (_hands.length > 2)
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.red),
