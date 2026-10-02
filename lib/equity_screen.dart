@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'background_equity_simulation.dart';
 import 'card.dart';
 import 'deck.dart';
+import 'range_chart.dart';
 import 'range_selector_screen.dart';
 
 class EquityHand {
@@ -334,16 +335,9 @@ class _EquityScreenState extends State<EquityScreen> {
             child: Row(
               children: [
                 if (hand.range.isNotEmpty)
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        double percentage = (hand.range.length / 1326) * 100;
-                        return Text(
-                          'Range: ${percentage.toStringAsFixed(2)}%',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        );
-                      },
-                    ),
+                  SizedBox(
+                    width: 104,
+                    child: Center(child: RangeChartImage(range: hand.range)),
                   )
                 else ...[
                   _buildCardSlot(

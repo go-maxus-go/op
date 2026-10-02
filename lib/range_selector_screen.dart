@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide Card;
 import 'utils/range_parser.dart';
-import 'theme.dart';
 import 'card.dart';
+import 'range_chart.dart';
 import 'range_editor_screen.dart';
 
 class RangeSelectorScreen extends StatefulWidget {
@@ -47,65 +47,18 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     );
   }
 
-  String _getHandAt(int row, int col) {
-    final r1Index = 12 - row;
-    final r2Index = 12 - col;
-
-    final r1 = Card.ranks[r1Index];
-    final r2 = Card.ranks[r2Index];
-
-    if (row == col) {
-      return '$r1$r2';
-    } else if (col > row) {
-      return '$r1${r2}s';
-    } else {
-      return '$r2${r1}o';
-    }
-  }
-
-  List<String> _getCombosForHand(String hand) {
-    if (hand.length == 2) {
-      final r = hand[0];
-      return [
-        '${r}s${r}h',
-        '${r}s${r}c',
-        '${r}s${r}d',
-        '${r}h${r}c',
-        '${r}h${r}d',
-        '${r}c${r}d',
-      ];
-    } else if (hand.endsWith('s')) {
-      final r1 = hand[0];
-      final r2 = hand[1];
-      return ['${r1}s${r2}s', '${r1}h${r2}h', '${r1}c${r2}c', '${r1}d${r2}d'];
-    } else {
-      final r1 = hand[0];
-      final r2 = hand[1];
-      final suits = ['s', 'h', 'c', 'd'];
-      final combos = <String>[];
-      for (var s1 in suits) {
-        for (var s2 in suits) {
-          if (s1 != s2) {
-            combos.add('$r1$s1$r2$s2');
-          }
-        }
-      }
-      return combos;
-    }
-  }
-
   void _handleDrag(Offset localPosition, double gridSize) {
     final double cellSize = (gridSize - 12) / 13;
     final int col = (localPosition.dx / (cellSize + 1)).floor();
     final int row = (localPosition.dy / (cellSize + 1)).floor();
 
     if (row >= 0 && row < 13 && col >= 0 && col < 13) {
-      String hand = _getHandAt(row, col);
+      String hand = RangeChart.handAt(row, col);
       if (!_draggedHands.contains(hand)) {
         _draggedHands.add(hand);
         setState(() {
           _activeHand = hand;
-          final combos = _getCombosForHand(hand);
+          final combos = RangeChart.combosForHand(hand);
           if (_isSelecting) {
             _selectedCombos.addAll(combos);
           } else {
@@ -122,8 +75,8 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     final int row = (localPosition.dy / (cellSize + 1)).floor();
 
     if (row >= 0 && row < 13 && col >= 0 && col < 13) {
-      String hand = _getHandAt(row, col);
-      final combos = _getCombosForHand(hand);
+      String hand = RangeChart.handAt(row, col);
+      final combos = RangeChart.combosForHand(hand);
       _isSelecting = !combos.every((c) => _selectedCombos.contains(c));
       _draggedHands.clear();
       _handleDrag(localPosition, gridSize);
@@ -132,8 +85,6 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final chartColors = Theme.of(context).extension<ChartColors>()!;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Select Range')),
       body: SafeArea(
@@ -197,45 +148,21 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                   itemBuilder: (context, index) {
                                     int row = index ~/ 13;
                                     int col = index % 13;
-                                    String hand = _getHandAt(row, col);
-                                    final combos = _getCombosForHand(hand);
-                                    final selectedCount = combos
-                                        .where(
-                                          (c) => _selectedCombos.contains(c),
-                                        )
-                                        .length;
-                                    final isFullySelected =
-                                        selectedCount == combos.length;
-                                    final isPartiallySelected =
-                                        selectedCount > 0 &&
-                                        selectedCount < combos.length;
-                                    final isSelected = selectedCount > 0;
+                                    final hand = RangeChart.handAt(row, col);
+                                    final isSelected =
+                                        RangeChart.selectedCount(
+                                          hand,
+                                          _selectedCombos,
+                                        ) >
+                                        0;
 
-                                    Color selectedColor;
-                                    if (row == col) {
-                                      selectedColor = chartColors.pairColor;
-                                    } else if (col > row) {
-                                      selectedColor = chartColors.suitedColor;
-                                    } else {
-                                      selectedColor = chartColors.offsuitColor;
-                                    }
-
-                                    BoxDecoration decoration;
-                                    if (isFullySelected) {
-                                      decoration = BoxDecoration(
-                                        color: selectedColor,
-                                        borderRadius: BorderRadius.circular(2),
-                                        border: _activeHand == hand
-                                            ? Border.all(
-                                                color: Colors.white,
-                                                width: 2,
-                                              )
-                                            : null,
-                                      );
-                                    } else if (isPartiallySelected) {
-                                      decoration = BoxDecoration(
-                                        color: selectedColor.withValues(
-                                          alpha: 0.5,
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: RangeChart.cellColor(
+                                          context: context,
+                                          row: row,
+                                          col: col,
+                                          selectedCombos: _selectedCombos,
                                         ),
                                         borderRadius: BorderRadius.circular(2),
                                         border: _activeHand == hand
@@ -244,24 +171,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                                 width: 2,
                                               )
                                             : null,
-                                      );
-                                    } else {
-                                      decoration = BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(2),
-                                        border: _activeHand == hand
-                                            ? Border.all(
-                                                color: Colors.white,
-                                                width: 2,
-                                              )
-                                            : null,
-                                      );
-                                    }
-
-                                    return Container(
-                                      decoration: decoration,
+                                      ),
                                       child: Center(
                                         child: FittedBox(
                                           fit: BoxFit.scaleDown,
