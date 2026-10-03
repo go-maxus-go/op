@@ -225,6 +225,30 @@ class _EquityScreenState extends State<EquityScreen> {
     return '${(range.length / 1326 * 100).toStringAsFixed(1)}%';
   }
 
+  Future<void> _openRange(int index) async {
+    final hand = _hands[index];
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RangeSelectorScreen(initialRange: hand.range),
+      ),
+    );
+    if (!mounted || result is! Set<String> || setEquals(result, hand.range)) {
+      return;
+    }
+    setState(() {
+      hand.range = result;
+      if (result.isNotEmpty) {
+        hand.cards = [null, null]; // Clear specific cards if range is selected
+        if (_currentSelection is HandTarget &&
+            (_currentSelection as HandTarget).handIndex == index) {
+          _currentSelection = null;
+        }
+      }
+      _recalculate();
+    });
+  }
+
   void _resetHand(int index) {
     setState(() {
       _hands[index]
@@ -358,21 +382,24 @@ class _EquityScreenState extends State<EquityScreen> {
             child: Row(
               children: [
                 if (hand.range.isNotEmpty)
-                  SizedBox(
-                    width: 104,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RangeChartImage(range: hand.range, size: 52),
-                        const SizedBox(height: 2),
-                        Text(
-                          _rangePercentText(hand.range),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: () => _openRange(index),
+                    child: SizedBox(
+                      width: 104,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RangeChartImage(range: hand.range, size: 52),
+                          const SizedBox(height: 2),
+                          Text(
+                            _rangePercentText(hand.range),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   )
                 else ...[
@@ -388,33 +415,7 @@ class _EquityScreenState extends State<EquityScreen> {
                 ],
                 const SizedBox(width: 16),
                 TextButton(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            RangeSelectorScreen(initialRange: hand.range),
-                      ),
-                    );
-                    if (result is Set<String> &&
-                        !setEquals(result, hand.range)) {
-                      setState(() {
-                        hand.range = result;
-                        if (result.isNotEmpty) {
-                          hand.cards = [
-                            null,
-                            null,
-                          ]; // Clear specific cards if range is selected
-                          if (_currentSelection is HandTarget &&
-                              (_currentSelection as HandTarget).handIndex ==
-                                  index) {
-                            _currentSelection = null;
-                          }
-                        }
-                        _recalculate();
-                      });
-                    }
-                  },
+                  onPressed: () => _openRange(index),
                   child: const Text('Range'),
                 ),
                 const SizedBox(width: 8),

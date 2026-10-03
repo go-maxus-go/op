@@ -163,6 +163,17 @@ void main() {
     expect(find.byType(RangeChartImage), findsOneWidget);
     expect(find.text('0.5%'), findsOneWidget);
 
+    await tester.tap(find.byType(RangeChartImage));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Select Range'), findsOneWidget);
+    expect(find.text('Selected: 0.45%'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(RangeChartImage), findsOneWidget);
+
     await tester.tap(find.byTooltip('Reset Hand'));
     await tester.pump();
 
