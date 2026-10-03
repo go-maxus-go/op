@@ -468,6 +468,11 @@ class _EquityScreenState extends State<EquityScreen> {
     );
   }
 
+  void _hideKeyboard() {
+    if (_currentSelection == null) return;
+    setState(() => _currentSelection = null);
+  }
+
   Widget _buildKeyboard() {
     if (_currentSelection == null) {
       return const SizedBox.shrink();
@@ -526,24 +531,40 @@ class _EquityScreenState extends State<EquityScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: IconButton(
-                      constraints: const BoxConstraints(
-                        maxHeight: 32,
-                        maxWidth: 32,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        constraints: const BoxConstraints(
+                          maxHeight: 32,
+                          maxWidth: 32,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onPressed: _hideKeyboard,
+                        icon: const Icon(
+                          Icons.keyboard_hide,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                        tooltip: 'Hide Keyboard',
                       ),
-                      padding: EdgeInsets.zero,
-                      onPressed: () => _onCardSelectedFromKeyboard(null),
-                      icon: const Icon(
-                        Icons.backspace,
-                        color: Colors.grey,
-                        size: 20,
+                      const Spacer(),
+                      IconButton(
+                        constraints: const BoxConstraints(
+                          maxHeight: 32,
+                          maxWidth: 32,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onPressed: () => _onCardSelectedFromKeyboard(null),
+                        icon: const Icon(
+                          Icons.backspace,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                        tooltip: 'Clear Slot',
                       ),
-                      tooltip: 'Clear Slot',
-                    ),
+                    ],
                   ),
                 ),
                 ...rows,
@@ -612,59 +633,62 @@ class _EquityScreenState extends State<EquityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Equity Calculator'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: _showSettings,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              _currentSelection = null;
-            });
-          },
-          behavior: HitTestBehavior.translucent,
-          child: Column(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      _buildBoard(),
-                      const Divider(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Hands',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+    return PopScope(
+      canPop: _currentSelection == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _hideKeyboard();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Equity Calculator'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Settings',
+              onPressed: _showSettings,
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: GestureDetector(
+            onTap: _hideKeyboard,
+            behavior: HitTestBehavior.translucent,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        _buildBoard(),
+                        const Divider(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Hands',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          if (_isCalculating || _progress != null)
-                            Text(
-                              'Simulations: ${_progress?.simulations ?? 0}',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _buildHands(),
-                    ],
+                            if (_isCalculating || _progress != null)
+                              Text(
+                                'Simulations: ${_progress?.simulations ?? 0}',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildHands(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildKeyboard(),
-            ],
+                _buildKeyboard(),
+              ],
+            ),
           ),
         ),
       ),

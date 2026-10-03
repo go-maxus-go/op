@@ -221,4 +221,67 @@ void main() {
     expect(shownEquities(tester), hasLength(2));
     expect(UserSettings.instance.equity.simulations, 1000);
   });
+
+  testWidgets('hide button closes the card keyboard', (tester) async {
+    useTallSurface(tester);
+    await tester.pumpWidget(
+      const MaterialApp(home: EquityScreen(maxSimulations: 1000)),
+    );
+
+    await tester.tap(find.byType(Image).first);
+    await tester.pump();
+    expect(find.byTooltip('Hide Keyboard'), findsOneWidget);
+    expect(find.byTooltip('Clear Slot'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Hide Keyboard'));
+    await tester.pump();
+
+    expect(find.byTooltip('Hide Keyboard'), findsNothing);
+    expect(find.byTooltip('Clear Slot'), findsNothing);
+  });
+
+  testWidgets('back hides the card keyboard before leaving', (tester) async {
+    useTallSurface(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const EquityScreen(maxSimulations: 1000),
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.byType(Image).first);
+    await tester.pump();
+    expect(find.byTooltip('Clear Slot'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byTooltip('Clear Slot'), findsNothing);
+    expect(find.text('Equity Calculator'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Equity Calculator'), findsNothing);
+    expect(find.text('Open'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
