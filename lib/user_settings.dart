@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'constants.dart';
@@ -8,9 +10,10 @@ import 'constants.dart';
 /// tests) [instance] holds defaults in memory and nothing is persisted.
 class UserSettings {
   UserSettings._(SharedPreferences? prefs)
-      : practice = PracticeSettings._(prefs),
-        configurator = ConfiguratorSettings._(prefs),
-        equity = EquitySettings._(prefs);
+    : practice = PracticeSettings._(prefs),
+      configurator = ConfiguratorSettings._(prefs),
+      equity = EquitySettings._(prefs),
+      ranges = RangeSettings._(prefs);
 
   static UserSettings? _instance;
 
@@ -28,6 +31,9 @@ class UserSettings {
 
   /// Equity calculator options.
   final EquitySettings equity;
+
+  /// Ranges saved from the range selector.
+  final RangeSettings ranges;
 }
 
 /// Base for a group of settings backed by [SharedPreferences] keys sharing a
@@ -76,6 +82,67 @@ class EquitySettings extends _SettingsSection {
   }
 }
 
+class SavedRange {
+  const SavedRange(this.name, this.hands);
+
+  final String name;
+
+  /// Compact range text, e.g. `QQ+, AKs, AsKh`.
+  final String hands;
+}
+
+class RangeSettings extends _SettingsSection {
+  RangeSettings._(SharedPreferences? prefs) : super(prefs, 'ranges') {
+    try {
+      final decoded = jsonDecode(_getString('saved', '{}'));
+      if (decoded is Map) {
+        for (final entry in decoded.entries) {
+          if (entry.key is String && entry.value is String) {
+            _saved[entry.key as String] = entry.value as String;
+          }
+        }
+      }
+    } on FormatException {
+      // Unreadable data is dropped; the user starts with no saved ranges.
+    }
+  }
+
+  final Map<String, String> _saved = {};
+
+  /// Saved ranges sorted by name, ignoring case.
+  List<SavedRange> get saved {
+    final ranges = [
+      for (final entry in _saved.entries) SavedRange(entry.key, entry.value),
+    ];
+    ranges.sort((a, b) {
+      final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      return byName != 0 ? byName : a.name.compareTo(b.name);
+    });
+    return ranges;
+  }
+
+  bool contains(String name) => _saved.containsKey(name);
+
+  /// Saves [hands] under [name], replacing a range with the same name.
+  void save(String name, String hands) {
+    _saved[name] = hands;
+    _store();
+  }
+
+  void rename(String oldName, String newName) {
+    final hands = _saved.remove(oldName);
+    if (hands == null) return;
+    _saved[newName] = hands;
+    _store();
+  }
+
+  void remove(String name) {
+    if (_saved.remove(name) != null) _store();
+  }
+
+  void _store() => _setString('saved', jsonEncode(_saved));
+}
+
 class PracticeSettings extends _SettingsSection {
   PracticeSettings._(SharedPreferences? prefs) : super(prefs, 'practice') {
     _autoAdvance = _getBool('autoAdvance', true);
@@ -108,12 +175,14 @@ class PracticeSettings extends _SettingsSection {
 
 class ConfiguratorSettings extends _SettingsSection {
   ConfiguratorSettings._(SharedPreferences? prefs)
-      : super(prefs, 'configurator') {
+    : super(prefs, 'configurator') {
     _mode = _getString('mode', 'Practice');
     _limit = _getString('limit', PokerConstants.limitNL100);
     _position = _getString('position', 'All');
-    _opponentPosition =
-        _getString('opponentPosition', PokerConstants.positionUTG);
+    _opponentPosition = _getString(
+      'opponentPosition',
+      PokerConstants.positionUTG,
+    );
     _chart = _getString('chart', PokerConstants.chartOPR);
   }
 

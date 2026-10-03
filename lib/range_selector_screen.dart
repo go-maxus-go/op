@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'utils/range_parser.dart';
 import 'card.dart';
 import 'range_chart.dart';
-import 'range_editor_screen.dart';
+import 'user_settings.dart';
 
 class RangeSelectorScreen extends StatefulWidget {
   final Set<String> initialRange;
@@ -19,11 +19,27 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
   final Set<String> _draggedHands = {};
   String? _activeHand;
   bool _isLocked = false;
+  late final TextEditingController _handsController;
+  String? _handsError;
+
+  /// Name of the saved range last loaded or saved, offered when saving again.
+  String? _rangeName;
+
+  final RangeSettings _ranges = UserSettings.instance.ranges;
 
   @override
   void initState() {
     super.initState();
     _selectedCombos = Set<String>.from(widget.initialRange);
+    _handsController = TextEditingController(
+      text: RangeParser.rangeFromCombos(_selectedCombos),
+    );
+  }
+
+  @override
+  void dispose() {
+    _handsController.dispose();
+    super.dispose();
   }
 
   String _selectedPercentText() {
@@ -31,20 +47,156 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
     return '${percentage.toStringAsFixed(2)}%';
   }
 
-  void _openRangeEditor() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RangeEditorScreen(
-          initialName: _selectedPercentText(),
-          initialHands: RangeParser.rangeFromCombos(_selectedCombos),
-          onHandsChanged: (combos) {
-            setState(() {
-              _selectedCombos = combos;
-            });
-          },
-        ),
+  /// Rewrites the hands field from the combos selected on the chart.
+  void _syncHandsText() {
+    _handsError = null;
+    final text = RangeParser.rangeFromCombos(_selectedCombos);
+    if (_handsController.text == text) return;
+    _handsController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _onHandsChanged(String value) {
+    try {
+      final combos = RangeParser.expandRangeToComboSet(value);
+      setState(() {
+        _handsError = null;
+        _selectedCombos = combos;
+      });
+    } catch (_) {
+      setState(() => _handsError = 'Invalid range');
+    }
+  }
+
+  void _finishHandsEditing() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (_handsError == null) setState(_syncHandsText);
+  }
+
+  void _clearRange() {
+    setState(() {
+      _selectedCombos = {};
+      _rangeName = null;
+      _syncHandsText();
+    });
+  }
+
+  void _loadRange(SavedRange range) {
+    setState(() {
+      _selectedCombos = RangeParser.expandRangeToComboSet(range.hands);
+      _rangeName = range.name;
+      _syncHandsText();
+    });
+  }
+
+  Future<void> _saveRange() async {
+    final result = await showDialog<_RangeNameResult>(
+      context: context,
+      builder: (context) => _RangeNameDialog(
+        title: 'Save Range',
+        initialName: _rangeName ?? '',
+        nameTaken: (name) => _ranges.contains(name),
+        replacesTakenName: true,
       ),
+    );
+    final name = result?.name;
+    if (!mounted || name == null) return;
+    setState(() {
+      _ranges.save(name, RangeParser.rangeFromCombos(_selectedCombos));
+      _rangeName = name;
+    });
+  }
+
+  Future<void> _editRange(SavedRange range) async {
+    final result = await showDialog<_RangeNameResult>(
+      context: context,
+      builder: (context) => _RangeNameDialog(
+        title: 'Edit Range',
+        initialName: range.name,
+        nameTaken: (name) => name != range.name && _ranges.contains(name),
+        replacesTakenName: false,
+        canDelete: true,
+      ),
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      if (result.delete) {
+        _ranges.remove(range.name);
+        if (_rangeName == range.name) _rangeName = null;
+      } else if (result.name != null && result.name != range.name) {
+        _ranges.rename(range.name, result.name!);
+        if (_rangeName == range.name) _rangeName = result.name;
+      }
+    });
+  }
+
+  Widget _buildHandsEditor() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _handsController,
+              onChanged: _onHandsChanged,
+              onEditingComplete: _finishHandsEditing,
+              onTapOutside: (_) => _finishHandsEditing(),
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: 'AKs, QQ+, 87s',
+                labelText: 'Range hands',
+                errorText: _handsError,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: _selectedCombos.isEmpty || _handsError != null
+                ? null
+                : _saveRange,
+            icon: const Icon(Icons.save),
+            tooltip: 'Save Range',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedRanges() {
+    final ranges = _ranges.saved;
+    if (ranges.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(
+            'Saved ranges',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        for (final range in ranges)
+          Builder(
+            builder: (context) {
+              final combos = RangeParser.expandRangeToComboSet(range.hands);
+              final percent = combos.length / 1326 * 100;
+              return ListTile(
+                leading: RangeChartImage(range: combos, size: 40),
+                title: Text(range.name),
+                trailing: Text(
+                  '${percent.toStringAsFixed(1)}%',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                selected: range.name == _rangeName,
+                onTap: () => _loadRange(range),
+                onLongPress: () => _editRange(range),
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -66,6 +218,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
           } else {
             _selectedCombos.removeAll(combos);
           }
+          _syncHandsText();
         });
       }
     }
@@ -100,9 +253,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
             IconButton(
               icon: const Icon(Icons.restart_alt),
               tooltip: 'Clear Range',
-              onPressed: _selectedCombos.isEmpty
-                  ? null
-                  : () => setState(() => _selectedCombos = {}),
+              onPressed: _selectedCombos.isEmpty ? null : _clearRange,
             ),
           ],
         ),
@@ -116,10 +267,10 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit_note),
-                        tooltip: 'Range',
+                        icon: Icon(_isLocked ? Icons.lock : Icons.lock_open),
+                        tooltip: _isLocked ? 'Unlock Range' : 'Lock Range',
                         visualDensity: VisualDensity.compact,
-                        onPressed: _openRangeEditor,
+                        onPressed: () => setState(() => _isLocked = !_isLocked),
                       ),
                       Text(
                         'Selected: ${_selectedPercentText()}',
@@ -127,12 +278,6 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(_isLocked ? Icons.lock : Icons.lock_open),
-                        tooltip: _isLocked ? 'Unlock Range' : 'Lock Range',
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => setState(() => _isLocked = !_isLocked),
                       ),
                     ],
                   ),
@@ -265,6 +410,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                                                         combo,
                                                       );
                                                     }
+                                                    _syncHandsText();
                                                   });
                                                 },
                                           child: Container(
@@ -316,12 +462,124 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
                       ],
                     ),
                   ),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [_buildHandsEditor(), _buildSavedRanges()],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RangeNameResult {
+  const _RangeNameResult.named(String this.name) : delete = false;
+  const _RangeNameResult.delete() : name = null, delete = true;
+
+  final String? name;
+  final bool delete;
+}
+
+class _RangeNameDialog extends StatefulWidget {
+  const _RangeNameDialog({
+    required this.title,
+    required this.initialName,
+    required this.nameTaken,
+    required this.replacesTakenName,
+    this.canDelete = false,
+  });
+
+  final String title;
+  final String initialName;
+  final bool Function(String name) nameTaken;
+
+  /// Whether a taken name may be used, replacing that range, or is an error.
+  final bool replacesTakenName;
+  final bool canDelete;
+
+  @override
+  State<_RangeNameDialog> createState() => _RangeNameDialogState();
+}
+
+class _RangeNameDialogState extends State<_RangeNameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialName)
+        ..selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: widget.initialName.length,
+        );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String get _name => _controller.text.trim();
+
+  bool get _isTaken => _name.isNotEmpty && widget.nameTaken(_name);
+
+  bool get _canSave =>
+      _name.isNotEmpty && (!_isTaken || widget.replacesTakenName);
+
+  void _submit() {
+    if (_canSave) Navigator.pop(context, _RangeNameResult.named(_name));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          labelText: 'Range name',
+          border: const OutlineInputBorder(),
+          errorText: _isTaken && !widget.replacesTakenName
+              ? 'A range with this name already exists'
+              : null,
+        ),
+      ),
+      actionsAlignment: widget.canDelete
+          ? MainAxisAlignment.spaceBetween
+          : MainAxisAlignment.end,
+      actions: [
+        if (widget.canDelete)
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () =>
+                Navigator.pop(context, const _RangeNameResult.delete()),
+            child: const Text('Delete'),
+          ),
+        if (_isTaken && widget.replacesTakenName)
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: _submit,
+            child: const Text('Rewrite'),
+          )
+        else
+          FilledButton(
+            onPressed: _canSave ? _submit : null,
+            child: const Text('Save'),
+          ),
+      ],
     );
   }
 }
