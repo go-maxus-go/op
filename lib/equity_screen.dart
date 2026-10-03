@@ -63,7 +63,7 @@ class HandTarget extends SelectionTarget {
 class _EquityScreenState extends State<EquityScreen> {
   static const int _maxHands = 10;
 
-  List<Card?> _board = List.filled(5, null);
+  final List<Card?> _board = List.filled(5, null);
   final List<EquityHand> _hands = [EquityHand(), EquityHand()];
 
   SelectionTarget? _currentSelection;
@@ -225,16 +225,6 @@ class _EquityScreenState extends State<EquityScreen> {
     return '${(range.length / 1326 * 100).toStringAsFixed(1)}%';
   }
 
-  void _clearBoard() {
-    setState(() {
-      _board = List.filled(5, null);
-      if (_currentSelection is BoardTarget) {
-        _currentSelection = null;
-      }
-      _recalculate();
-    });
-  }
-
   void _resetHand(int index) {
     setState(() {
       _hands[index]
@@ -340,14 +330,6 @@ class _EquityScreenState extends State<EquityScreen> {
               _buildCardSlot(card: _board[3], target: BoardTarget(3)),
               const SizedBox(width: 16),
               _buildCardSlot(card: _board[4], target: BoardTarget(4)),
-              if (_board.any((card) => card != null)) ...[
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.restart_alt),
-                  tooltip: 'Clear Board',
-                  onPressed: _clearBoard,
-                ),
-              ],
             ],
           ),
         ],

@@ -104,7 +104,7 @@ void main() {
     expect(shownSimulations(tester), lessThan(1000000));
   });
 
-  testWidgets('clearing the board restarts the simulation', (tester) async {
+  testWidgets('changing the board restarts the simulation', (tester) async {
     useTallSurface(tester);
 
     await tester.pumpWidget(
@@ -112,7 +112,6 @@ void main() {
     );
     await dealFirstHoleCard(tester);
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
-    expect(find.byTooltip('Clear Board'), findsNothing);
 
     await tester.tap(find.byType(Image).first);
     await tester.pump();
@@ -124,16 +123,15 @@ void main() {
     // card was already dealt to a hand.
     await tester.tap(find.byType(Image).at(10));
     await tester.pump();
-    expect(find.byTooltip('Clear Board'), findsOneWidget);
 
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 2000);
 
-    await tester.tap(find.byTooltip('Clear Board'));
+    // The keyboard stays open on the next board slot.
+    await tester.tap(find.byType(Image).at(11));
     await tester.pump();
 
     expect(shownSimulations(tester), 0);
     expect(find.text('Equity: --%'), findsNWidgets(2));
-    expect(find.byTooltip('Clear Board'), findsNothing);
 
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
     expect(shownEquities(tester), hasLength(2));
