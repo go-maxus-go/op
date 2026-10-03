@@ -30,6 +30,7 @@ class _PokerTrainingAppState extends State<PokerTrainingApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Poker Training',
       theme: ThemeData(
         colorScheme: AppTheme.lightColorScheme,

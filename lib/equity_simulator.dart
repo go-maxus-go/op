@@ -28,6 +28,7 @@ class SimulationResults {
   final List<double> _equities;
   final int maxSimulations;
   var _simulations = 0;
+  List<double>? _exact;
 
   SimulationResults(int handsCount, this.maxSimulations)
     : _equities = List.filled(handsCount, 0.0);
@@ -38,7 +39,7 @@ class SimulationResults {
         'Expected ${_equities.length} scores, got ${simulation.scores.length}',
       );
     }
-    if (_simulations >= maxSimulations) {
+    if (isComplete) {
       throw StateError(
         'Simulation results are complete: $_simulations simulations',
       );
@@ -50,14 +51,31 @@ class SimulationResults {
     }
   }
 
+  /// Records [equities] as the final result without dealing.
+  void finish(List<double> equities) {
+    if (isComplete) {
+      throw StateError(
+        'Simulation results are complete: $_simulations simulations',
+      );
+    }
+    if (equities.length != _equities.length) {
+      throw ArgumentError(
+        'Expected ${_equities.length} equities, got ${equities.length}',
+      );
+    }
+    _exact = List<double>.from(equities);
+  }
+
   List<double> get equities {
+    final exact = _exact;
+    if (exact != null) return List<double>.from(exact);
     if (_simulations == 0) {
       throw StateError('No simulations have been run');
     }
     return _equities.map((e) => e / _simulations).toList();
   }
 
-  bool get isComplete => _simulations >= maxSimulations;
+  bool get isComplete => _exact != null || _simulations >= maxSimulations;
 }
 
 /// Monte Carlo equity of ranges such as `88+, AKs`, `AsKh` or `As`.
@@ -65,6 +83,9 @@ class SimulationResults {
 /// Every simulation deals one random combo from each range, then completes
 /// the board from the cards that are neither on the board nor dealt to a
 /// player. Players may share a card, e.g. `AsKh` vs `AsKs`.
+///
+/// When every range is the same set of combos, each has equal equity and
+/// [run] reports that without dealing.
 class EquitySimulator {
   /// The combos of each range that do not use a board card.
   final List<List<Hand>> ranges;
@@ -152,6 +173,12 @@ class EquitySimulator {
       );
     }
 
+    if (_identicalRanges) {
+      results.finish(List.filled(ranges.length, 1 / ranges.length));
+      callback(results.equities);
+      return;
+    }
+
     _stopRequested = false;
     while (simulations < maxSimulations && !_stopRequested) {
       final dead = {...board};
@@ -181,6 +208,20 @@ class EquitySimulator {
 
   void stop() {
     _stopRequested = true;
+  }
+
+  /// True when sampling any range is the same as sampling any other.
+  bool get _identicalRanges {
+    final first = ranges.first.toSet();
+    if (first.length != ranges.first.length) return false;
+    for (final range in ranges.skip(1)) {
+      if (range.length != first.length) return false;
+      final combos = range.toSet();
+      if (combos.length != first.length || !first.containsAll(combos)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Draws [count] distinct random cards that are not in [dead].

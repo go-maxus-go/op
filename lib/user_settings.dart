@@ -9,7 +9,8 @@ import 'constants.dart';
 class UserSettings {
   UserSettings._(SharedPreferences? prefs)
       : practice = PracticeSettings._(prefs),
-        configurator = ConfiguratorSettings._(prefs);
+        configurator = ConfiguratorSettings._(prefs),
+        equity = EquitySettings._(prefs);
 
   static UserSettings? _instance;
 
@@ -24,6 +25,9 @@ class UserSettings {
 
   /// Last selection made in the charts / practice configurator.
   final ConfiguratorSettings configurator;
+
+  /// Equity calculator options.
+  final EquitySettings equity;
 }
 
 /// Base for a group of settings backed by [SharedPreferences] keys sharing a
@@ -45,6 +49,31 @@ abstract class _SettingsSection {
 
   void _setString(String key, String value) =>
       _prefs?.setString('$_prefix.$key', value);
+
+  int _getInt(String key, int fallback) =>
+      _prefs?.getInt('$_prefix.$key') ?? fallback;
+
+  void _setInt(String key, int value) => _prefs?.setInt('$_prefix.$key', value);
+}
+
+class EquitySettings extends _SettingsSection {
+  static const int defaultSimulations = 10000;
+  static const List<int> simulationCounts = [1000, 10000, 100000];
+
+  EquitySettings._(SharedPreferences? prefs) : super(prefs, 'equity') {
+    final stored = _getInt('simulations', defaultSimulations);
+    _simulations = simulationCounts.contains(stored)
+        ? stored
+        : defaultSimulations;
+  }
+
+  late int _simulations;
+
+  int get simulations => _simulations;
+  set simulations(int value) {
+    _simulations = value;
+    _setInt('simulations', value);
+  }
 }
 
 class PracticeSettings extends _SettingsSection {

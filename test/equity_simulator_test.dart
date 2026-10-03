@@ -90,6 +90,15 @@ void main() {
       final results = SimulationResults(2, 10);
       expect(() => results.add(Simulation([broadway])), throwsArgumentError);
     });
+
+    test('an exact result is complete without simulations', () {
+      final results = SimulationResults(2, 10);
+      results.finish([0.5, 0.5]);
+      expect(results.isComplete, isTrue);
+      expect(results.equities, [0.5, 0.5]);
+      expect(() => results.add(Simulation([aces, kings])), throwsStateError);
+      expect(() => results.finish([0.5, 0.5]), throwsStateError);
+    });
   });
 
   group('EquitySimulator validation', () {
@@ -211,6 +220,8 @@ void main() {
     test('one fully known hand has equity 1', () {
       final sim = simulator(['AsAh'], board: 'KdQcJh2c3d', maxSimulations: 2);
       sim.run((_) {});
+      expect(sim.simulations, 0);
+      expect(sim.results.isComplete, isTrue);
       expect(sim.results.equities, [1]);
     });
 
@@ -389,10 +400,36 @@ void main() {
       expect(sim.results.equities[0], closeTo(0.82, 0.03));
     });
 
-    test('random hands share the pot equally', () {
-      final sim = simulator(['', ''], maxSimulations: 5000);
+    test('identical ranges split the pot without simulating', () {
+      final seen = <List<double>>[];
+      final sim = simulator(['', '  '], maxSimulations: 5000);
+      sim.run(seen.add);
+      expect(sim.simulations, 0);
+      expect(sim.results.isComplete, isTrue);
+      expect(seen, [
+        [0.5, 0.5],
+      ]);
+      expect(sim.results.equities, [0.5, 0.5]);
+      expect(() => sim.run((_) {}), throwsStateError);
+    });
+
+    test('the same combos are identical whatever the notation', () {
+      final sim = simulator(
+        ['KK, AA', 'AA, KK', 'AsAh, AsAd, AsAc, AhAd, AhAc, AdAc, KK'],
+        board: '2c7d',
+      );
       sim.run((_) {});
-      expect(sim.results.equities[0], closeTo(0.5, 0.03));
+      expect(sim.simulations, 0);
+      for (final equity in sim.results.equities) {
+        expect(equity, closeTo(1 / 3, 1e-12));
+      }
+    });
+
+    test('a board can make different notations the same range', () {
+      final sim = simulator(['AhAd, AhAs', 'AhAd'], board: 'As');
+      sim.run((_) {});
+      expect(sim.simulations, 0);
+      expect(sim.results.equities, [0.5, 0.5]);
     });
 
     test('the same seed gives the same equities', () {

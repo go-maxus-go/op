@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/equity_screen.dart';
 import 'package:optimal_poker/range_chart.dart';
 import 'package:optimal_poker/theme.dart';
+import 'package:optimal_poker/user_settings.dart';
 
 /// Lets the background isolate deliver messages until [done] holds.
 Future<void> pumpUntil(
@@ -32,6 +33,30 @@ List<double> shownEquities(WidgetTester tester) => tester
     .map((text) => double.parse(text.data!.split(' ')[1].replaceAll('%', '')))
     .toList();
 
+void useTallSurface(WidgetTester tester) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(800, 2400);
+  addTearDown(tester.view.reset);
+}
+
+/// Deals one hole card so the two starting ranges are no longer the same.
+///
+/// The card is taken from the second keyboard row, leaving the first row's
+/// first card free for tests that deal a board card next.
+Future<void> dealFirstHoleCard(WidgetTester tester) async {
+  await tester.tap(find.byType(Image).at(5));
+  await tester.pump();
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 50)),
+  );
+  await tester.pump();
+  await tester.tap(find.byType(Image).at(22));
+  await tester.pump();
+  await tester.tap(find.text('Hands'));
+  await tester.pump();
+  expect(find.text('3.85%'), findsOneWidget);
+}
+
 void main() {
   testWidgets('shows equities once the background simulation finishes', (
     tester,
@@ -41,22 +66,21 @@ void main() {
     );
     expect(find.text('Equity: --%'), findsNWidgets(2));
 
-    await pumpUntil(tester, () => shownSimulations(tester) == 20000);
+    await pumpUntil(tester, () => shownEquities(tester).length == 2);
 
     expect(find.text('Equity: --%'), findsNothing);
-    final equities = shownEquities(tester);
-    expect(equities, hasLength(2));
-    for (final equity in equities) {
-      expect(equity, closeTo(50, 2));
-    }
+    expect(shownSimulations(tester), 0);
+    expect(shownEquities(tester), [50, 50]);
   });
 
   testWidgets('shows partial results while the simulation is running', (
     tester,
   ) async {
+    useTallSurface(tester);
     await tester.pumpWidget(
       const MaterialApp(home: EquityScreen(maxSimulations: 1000000)),
     );
+    await dealFirstHoleCard(tester);
 
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
 
@@ -67,9 +91,11 @@ void main() {
   testWidgets('stays interactive while the simulation is running', (
     tester,
   ) async {
+    useTallSurface(tester);
     await tester.pumpWidget(
       const MaterialApp(home: EquityScreen(maxSimulations: 1000000)),
     );
+    await dealFirstHoleCard(tester);
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
 
     await tester.tap(find.byType(Image).first);
@@ -79,17 +105,36 @@ void main() {
     expect(shownSimulations(tester), lessThan(1000000));
   });
 
-  testWidgets('clearing the deal restarts the simulation', (tester) async {
+  testWidgets('clearing the board restarts the simulation', (tester) async {
+    useTallSurface(tester);
+
     await tester.pumpWidget(
       const MaterialApp(home: EquityScreen(maxSimulations: 1000000)),
     );
+    await dealFirstHoleCard(tester);
+    await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
+    expect(find.byTooltip('Clear Board'), findsNothing);
+
+    await tester.tap(find.byType(Image).first);
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+    // Board and hand slots come before the card keyboard. The first keyboard
+    // card was already dealt to a hand.
+    await tester.tap(find.byType(Image).at(10));
+    await tester.pump();
+    expect(find.byTooltip('Clear Board'), findsOneWidget);
+
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 2000);
 
-    await tester.tap(find.byTooltip('Clear All'));
+    await tester.tap(find.byTooltip('Clear Board'));
     await tester.pump();
 
     expect(shownSimulations(tester), 0);
     expect(find.text('Equity: --%'), findsNWidgets(2));
+    expect(find.byTooltip('Clear Board'), findsNothing);
 
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
     expect(shownEquities(tester), hasLength(2));
@@ -129,9 +174,11 @@ void main() {
   });
 
   testWidgets('leaving the screen stops the simulation', (tester) async {
+    useTallSurface(tester);
     await tester.pumpWidget(
       const MaterialApp(home: EquityScreen(maxSimulations: 1000000)),
     );
+    await dealFirstHoleCard(tester);
     await pumpUntil(tester, () => (shownSimulations(tester) ?? 0) > 0);
 
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));
@@ -141,5 +188,37 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('settings choose how many simulations to run', (tester) async {
+    useTallSurface(tester);
+    UserSettings.instance.equity.simulations =
+        EquitySettings.defaultSimulations;
+    addTearDown(
+      () => UserSettings.instance.equity.simulations =
+          EquitySettings.defaultSimulations,
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: EquityScreen()));
+    await dealFirstHoleCard(tester);
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Simulation number'), findsOneWidget);
+    expect(find.text('1k'), findsOneWidget);
+    expect(find.text('10k'), findsOneWidget);
+    expect(find.text('100k'), findsOneWidget);
+    expect(
+      tester.widget<RadioGroup<int>>(find.byType(RadioGroup<int>)).groupValue,
+      10000,
+    );
+
+    await tester.tap(find.text('1k'));
+    await tester.pump();
+
+    await pumpUntil(tester, () => shownSimulations(tester) == 1000);
+    expect(shownEquities(tester), hasLength(2));
+    expect(UserSettings.instance.equity.simulations, 1000);
   });
 }

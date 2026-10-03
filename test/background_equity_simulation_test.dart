@@ -108,6 +108,22 @@ void main() {
     expect(result.equities[0], closeTo(0.82, 0.03));
   });
 
+  test('identical ranges finish with equal equity and no deals', () async {
+    final done = Completer<EquityProgress>();
+    await BackgroundEquitySimulation.start(
+      ranges: ['AA', 'AA'],
+      board: [],
+      maxSimulations: 5000,
+      onProgress: (progress) {
+        if (progress.isComplete) done.complete(progress);
+      },
+    );
+
+    final result = await done.future.timeout(const Duration(seconds: 5));
+    expect(result.simulations, 0);
+    expect(result.equities, [0.5, 0.5]);
+  });
+
   test('rejects an invalid deal before starting a worker', () {
     expect(
       () => BackgroundEquitySimulation.start(

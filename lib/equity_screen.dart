@@ -4,6 +4,7 @@ import 'card.dart';
 import 'deck.dart';
 import 'range_chart.dart';
 import 'range_selector_screen.dart';
+import 'user_settings.dart';
 
 class EquityHand {
   List<Card?> cards = [null, null];
@@ -11,9 +12,10 @@ class EquityHand {
 }
 
 class EquityScreen extends StatefulWidget {
-  final int maxSimulations;
+  /// When set, used instead of the saved simulation count.
+  final int? maxSimulations;
 
-  const EquityScreen({super.key, this.maxSimulations = 25000});
+  const EquityScreen({super.key, this.maxSimulations});
 
   @override
   State<EquityScreen> createState() => _EquityScreenState();
@@ -65,6 +67,8 @@ class _EquityScreenState extends State<EquityScreen> {
 
   SelectionTarget? _currentSelection;
 
+  late int _maxSimulations;
+
   BackgroundEquitySimulation? _simulation;
 
   /// Incremented on every recalculation so a worker that finishes starting
@@ -79,6 +83,8 @@ class _EquityScreenState extends State<EquityScreen> {
   @override
   void initState() {
     super.initState();
+    _maxSimulations =
+        widget.maxSimulations ?? UserSettings.instance.equity.simulations;
     _recalculate();
   }
 
@@ -108,7 +114,7 @@ class _EquityScreenState extends State<EquityScreen> {
                 : hand.cards.whereType<Card>().join(),
         ],
         board: _board.whereType<Card>().toList(),
-        maxSimulations: widget.maxSimulations,
+        maxSimulations: _maxSimulations,
         onProgress: (progress) {
           if (!mounted || generation != _generation) return;
           setState(() {
@@ -142,7 +148,10 @@ class _EquityScreenState extends State<EquityScreen> {
 
   String _equityText(int handIndex) {
     final progress = _progress;
-    if (progress == null || progress.simulations == 0) return 'Equity: --%';
+    if (progress == null ||
+        (progress.simulations == 0 && !progress.isComplete)) {
+      return 'Equity: --%';
+    }
     final equity = progress.equities[handIndex] * 100;
     return 'Equity: ${equity.toStringAsFixed(1)}%';
   }
@@ -223,6 +232,16 @@ class _EquityScreenState extends State<EquityScreen> {
       };
     }
     return '${(combos / 1326 * 100).toStringAsFixed(2)}%';
+  }
+
+  void _clearBoard() {
+    setState(() {
+      _board = List.filled(5, null);
+      if (_currentSelection is BoardTarget) {
+        _currentSelection = null;
+      }
+      _recalculate();
+    });
   }
 
   void _resetHand(int index) {
@@ -330,6 +349,14 @@ class _EquityScreenState extends State<EquityScreen> {
               _buildCardSlot(card: _board[3], target: BoardTarget(3)),
               const SizedBox(width: 16),
               _buildCardSlot(card: _board[4], target: BoardTarget(4)),
+              if (_board.any((card) => card != null)) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.restart_alt),
+                  tooltip: 'Clear Board',
+                  onPressed: _clearBoard,
+                ),
+              ],
             ],
           ),
         ],
@@ -528,6 +555,61 @@ class _EquityScreenState extends State<EquityScreen> {
     );
   }
 
+  void _showSettings() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Simulation number',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RadioGroup<int>(
+                      groupValue: _maxSimulations,
+                      onChanged: (value) {
+                        if (value == null || value == _maxSimulations) return;
+                        setState(() {
+                          _maxSimulations = value;
+                          UserSettings.instance.equity.simulations = value;
+                          _recalculate();
+                        });
+                        setModalState(() {});
+                      },
+                      child: Column(
+                        children: [
+                          for (final count in EquitySettings.simulationCounts)
+                            RadioListTile<int>(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(_simulationCountLabel(count)),
+                              value: count,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _simulationCountLabel(int count) => '${count ~/ 1000}k';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -535,18 +617,9 @@ class _EquityScreenState extends State<EquityScreen> {
         title: const Text('Equity Calculator'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              setState(() {
-                _board = List.filled(5, null);
-                for (int i = 0; i < _hands.length; i++) {
-                  _hands[i] = EquityHand();
-                }
-                _currentSelection = null;
-                _recalculate();
-              });
-            },
-            tooltip: 'Clear All',
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: _showSettings,
           ),
         ],
       ),
