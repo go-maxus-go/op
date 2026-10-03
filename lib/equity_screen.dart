@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'background_equity_simulation.dart';
 import 'card.dart';
@@ -220,18 +221,8 @@ class _EquityScreenState extends State<EquityScreen> {
     });
   }
 
-  String _handPercentText(EquityHand hand) {
-    final int combos;
-    if (hand.range.isNotEmpty) {
-      combos = hand.range.length;
-    } else {
-      combos = switch (hand.cards.whereType<Card>().length) {
-        2 => 1,
-        1 => 51,
-        _ => 1326,
-      };
-    }
-    return '${(combos / 1326 * 100).toStringAsFixed(2)}%';
+  String _rangePercentText(Set<String> range) {
+    return '${(range.length / 1326 * 100).toStringAsFixed(1)}%';
   }
 
   void _clearBoard() {
@@ -387,7 +378,20 @@ class _EquityScreenState extends State<EquityScreen> {
                 if (hand.range.isNotEmpty)
                   SizedBox(
                     width: 104,
-                    child: Center(child: RangeChartImage(range: hand.range)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        RangeChartImage(range: hand.range, size: 52),
+                        const SizedBox(height: 2),
+                        Text(
+                          _rangePercentText(hand.range),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   )
                 else ...[
                   _buildCardSlot(
@@ -401,15 +405,6 @@ class _EquityScreenState extends State<EquityScreen> {
                   ),
                 ],
                 const SizedBox(width: 16),
-                SizedBox(
-                  width: 72,
-                  child: Text(
-                    _handPercentText(hand),
-                    maxLines: 1,
-                    softWrap: false,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
                 TextButton(
                   onPressed: () async {
                     final result = await Navigator.push(
@@ -419,7 +414,8 @@ class _EquityScreenState extends State<EquityScreen> {
                             RangeSelectorScreen(initialRange: hand.range),
                       ),
                     );
-                    if (result != null && result is Set<String>) {
+                    if (result is Set<String> &&
+                        !setEquals(result, hand.range)) {
                       setState(() {
                         hand.range = result;
                         if (result.isNotEmpty) {

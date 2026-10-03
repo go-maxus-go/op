@@ -54,7 +54,6 @@ Future<void> dealFirstHoleCard(WidgetTester tester) async {
   await tester.pump();
   await tester.tap(find.text('Hands'));
   await tester.pump();
-  expect(find.text('3.85%'), findsOneWidget);
 }
 
 void main() {
@@ -159,12 +158,12 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.text('AA'));
     await tester.pump();
-    await tester.tap(find.text('Apply'));
+    await tester.pageBack();
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(RangeChartImage), findsOneWidget);
-    expect(find.text('0.45%'), findsOneWidget);
+    expect(find.text('0.5%'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Reset Hand'));
     await tester.pump();

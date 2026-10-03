@@ -68,4 +68,76 @@ void main() {
       'AA',
     );
   });
+
+  testWidgets('Leaving the screen returns the selected range', (
+    WidgetTester tester,
+  ) async {
+    Object? result;
+    await tester.pumpWidget(
+      _wrap(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const RangeSelectorScreen(initialRange: {}),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('AA'));
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open'), findsOneWidget);
+    expect(result, hasLength(6));
+  });
+
+  testWidgets('Clear button deselects all hands', (WidgetTester tester) async {
+    await tester.pumpWidget(_wrap(const RangeSelectorScreen(initialRange: {})));
+
+    expect(find.text('Cancel'), findsNothing);
+
+    await tester.tap(find.text('AA'));
+    await tester.pump();
+    expect(find.text('Selected: 0.45%'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Clear Range'));
+    await tester.pump();
+
+    expect(find.text('Selected: 0.00%'), findsOneWidget);
+  });
+
+  testWidgets('Locked chart shows combos without changing the range', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const RangeSelectorScreen(initialRange: {})));
+
+    await tester.tap(find.byTooltip('Lock Range'));
+    await tester.pump();
+
+    await tester.tap(find.text('AA'));
+    await tester.pump();
+
+    expect(find.text('Selected: 0.00%'), findsOneWidget);
+    expect(find.text('Combinations for AA'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Unlock Range'));
+    await tester.pump();
+
+    await tester.tap(find.text('AA'));
+    await tester.pump();
+
+    expect(find.text('Selected: 0.45%'), findsOneWidget);
+  });
 }
