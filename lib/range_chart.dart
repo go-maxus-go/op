@@ -55,7 +55,9 @@ class RangeChart {
     return combosForHand(hand).where(selectedCombos.contains).length;
   }
 
-  static Color cellColor({
+  /// Fill of a cell. A partially selected hand is light on the left for the
+  /// selected share of its combos and dark on the right for the rest.
+  static LinearGradient cellGradient({
     required BuildContext context,
     required int row,
     required int col,
@@ -67,7 +69,7 @@ class RangeChart {
     final selected = selectedCount(hand, selectedCombos);
 
     if (selected == 0) {
-      return Theme.of(context).colorScheme.surfaceContainerHighest;
+      return _solid(Theme.of(context).colorScheme.surfaceContainerHighest);
     }
 
     final Color handColor;
@@ -78,7 +80,20 @@ class RangeChart {
     } else {
       handColor = chartColors.offsuitColor;
     }
-    return selected == total ? handColor : handColor.withValues(alpha: 0.5);
+    if (selected == total) {
+      return _solid(handColor);
+    }
+
+    final dark = handColor.withValues(alpha: 0.5);
+    final share = selected / total;
+    return LinearGradient(
+      colors: [handColor, handColor, dark, dark],
+      stops: [0, share, share, 1],
+    );
+  }
+
+  static LinearGradient _solid(Color color) {
+    return LinearGradient(colors: [color, color]);
   }
 }
 
@@ -90,10 +105,10 @@ class RangeChartImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = [
+    final gradients = [
       for (var row = 0; row < RangeChart.size; row++)
         for (var col = 0; col < RangeChart.size; col++)
-          RangeChart.cellColor(
+          RangeChart.cellGradient(
             context: context,
             row: row,
             col: col,
@@ -103,15 +118,15 @@ class RangeChartImage extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _RangeChartPainter(colors)),
+      child: CustomPaint(painter: _RangeChartPainter(gradients)),
     );
   }
 }
 
 class _RangeChartPainter extends CustomPainter {
-  final List<Color> colors;
+  final List<LinearGradient> gradients;
 
-  _RangeChartPainter(this.colors);
+  _RangeChartPainter(this.gradients);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -120,17 +135,22 @@ class _RangeChartPainter extends CustomPainter {
     final paint = Paint();
     for (var row = 0; row < RangeChart.size; row++) {
       for (var col = 0; col < RangeChart.size; col++) {
-        paint.color = colors[row * RangeChart.size + col];
-        canvas.drawRect(
-          Rect.fromLTWH(col * (cell + gap), row * (cell + gap), cell, cell),
-          paint,
+        final rect = Rect.fromLTWH(
+          col * (cell + gap),
+          row * (cell + gap),
+          cell,
+          cell,
         );
+        paint.shader = gradients[row * RangeChart.size + col].createShader(
+          rect,
+        );
+        canvas.drawRect(rect, paint);
       }
     }
   }
 
   @override
   bool shouldRepaint(_RangeChartPainter oldDelegate) {
-    return !listEquals(oldDelegate.colors, colors);
+    return !listEquals(oldDelegate.gradients, gradients);
   }
 }

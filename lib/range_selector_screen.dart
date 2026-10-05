@@ -323,7 +323,7 @@ class _RangeSelectorScreenState extends State<RangeSelectorScreen> {
 
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: RangeChart.cellColor(
+                                    gradient: RangeChart.cellGradient(
                                       context: context,
                                       row: row,
                                       col: col,

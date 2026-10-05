@@ -4,24 +4,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:optimal_poker/utils/chart_parser.dart';
 import 'package:yaml/yaml.dart';
 
+PositionChart _parse(String yaml, String position) {
+  return ChartParser.parse(loadYaml(yaml), position);
+}
+
 void main() {
   late PositionChart utg;
-  late PositionChart hjVsUtg;
-
-  PositionChart load(String chart, String position) {
-    final path = ChartParser.assetPath(
-      type: '6max',
-      stacks: '100',
-      limit: 'NL100',
-      raise: '3bb',
-      chart: chart,
-    );
-    return ChartParser.parse(loadYaml(File(path).readAsStringSync()), position);
-  }
+  late PositionChart hj;
 
   setUpAll(() {
-    utg = load('OPR', 'UTG');
-    hjVsUtg = load('vs_UTG_opr', 'HJ');
+    utg = _parse('''
+UTG:
+  - Raise 3bb: 88+, 7s7c, 7h7c, 7c7d, A2s+, ATo+, Tc9c
+''', 'UTG');
+    hj = _parse('''
+HJ:
+  - Raise 9bb: 77+
+  - Call 3bb: A2s+, AJo+, 22+
+''', 'HJ');
   });
 
   test('Asset paths follow the chart directory layout', () {
@@ -36,21 +36,33 @@ void main() {
     expect(path('vs_UTG_opr'), 'assets/6max/100bb/vs_OPR/UTG/nl100_3bb.yaml');
   });
 
+  test('Every chart asset parses', () {
+    final files = Directory('assets/6max')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.yaml'));
+    expect(files, isNotEmpty);
+    for (final file in files) {
+      final doc = loadYaml(file.readAsStringSync()) as YamlMap;
+      for (final position in doc.keys.where((k) => k != 'config')) {
+        final chart = ChartParser.parse(doc, position as String);
+        expect(chart.comboActions, isNotEmpty, reason: file.path);
+      }
+    }
+  });
+
   test('The first declared action wins for overlapping ranges', () {
-    expect(hjVsUtg.actionForCombo('7s7h'), 'Raise 9bb');
-    expect(hjVsUtg.actionForCombo('AsAh'), 'Raise 9bb');
-    expect(hjVsUtg.actionForCombo('6s6h'), 'Call 3bb');
-    expect(hjVsUtg.actionForCombo('2s2h'), 'Call 3bb');
-    expect(hjVsUtg.actionForCombo('As2s'), 'Call 3bb');
-    expect(hjVsUtg.actionForCombo('AsJh'), 'Call 3bb');
-    expect(hjVsUtg.actionForCombo('AsTh'), PositionChart.foldLabel);
+    expect(hj.actionForCombo('7s7h'), 'Raise 9bb');
+    expect(hj.actionForCombo('AsAh'), 'Raise 9bb');
+    expect(hj.actionForCombo('6s6h'), 'Call 3bb');
+    expect(hj.actionForCombo('2s2h'), 'Call 3bb');
+    expect(hj.actionForCombo('As2s'), 'Call 3bb');
+    expect(hj.actionForCombo('AsJh'), 'Call 3bb');
+    expect(hj.actionForCombo('AsTh'), PositionChart.foldLabel);
   });
 
   test('A declared fold keeps its combos from later actions', () {
-    final chart = ChartParser.parse(
-      loadYaml('HJ:\n  - Fold: AA\n  - Call 3bb: QQ+'),
-      'HJ',
-    );
+    final chart = _parse('HJ:\n  - Fold: AA\n  - Call 3bb: QQ+', 'HJ');
     expect(chart.actionForCombo('AsAh'), PositionChart.foldLabel);
     expect(chart.actionForCombo('KsKh'), 'Call 3bb');
   });

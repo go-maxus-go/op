@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:optimal_poker/range_chart.dart';
 import 'package:optimal_poker/range_selector_screen.dart';
 import 'package:optimal_poker/theme.dart';
 import 'package:optimal_poker/user_settings.dart';
@@ -60,6 +61,9 @@ Future<void> _saveAs(WidgetTester tester, String name) async {
 }
 
 void main() {
+  _expectCellSplit({'AsKs', 'AhKh'}, 'AKs', 0.5);
+  _expectCellSplit({'AsKs'}, 'AKs', 0.25);
+
   tearDown(_removeSavedRanges);
 
   testWidgets('Typing a range selects matching hands on the chart', (
@@ -274,5 +278,32 @@ void main() {
     await tester.pump();
 
     expect(find.text('Selected: 0.45%'), findsOneWidget);
+  });
+}
+
+void _expectCellSplit(Set<String> combos, String hand, double share) {
+  testWidgets('$hand with ${combos.length} combos is light for $share', (
+    tester,
+  ) async {
+    late LinearGradient gradient;
+    await tester.pumpWidget(
+      _wrap(
+        Builder(
+          builder: (context) {
+            gradient = RangeChart.cellGradient(
+              context: context,
+              row: 0,
+              col: 1,
+              selectedCombos: combos,
+            );
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    final light = AppTheme.lightChartColors.suitedColor;
+    final dark = light.withValues(alpha: 0.5);
+    expect(gradient.colors, [light, light, dark, dark]);
+    expect(gradient.stops, [0, share, share, 1]);
   });
 }

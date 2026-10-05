@@ -2,5 +2,17 @@ config:
   limit: NL100
   raise: 3bb
 HJ:
-  - Raise 9bb: KK+, QsQh, QsQc, QsQd, QhQc, QhQd, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AsJs, AhJh, AsTs, AhTh, As9s, As8s, As7s, A5s, A4s, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KsQs, KhQh, KcQc, KsJs, KhJh, KcJc, KsTs, KhTh, KcTc, Ks9s, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, 8s7s, 7s6s, 6s5s, 5s4s
-  - Call 3bb: A2s+, AJo+, 22+
+  - Raise 9bb: KK+, QsQh, QsQc, QsQd, QhQc, QhQd, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AsJs, AhJh, AsTs, AhTh, As9s, As8s, As7s, A5s, A4s, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KsQs, KhQh, KcQc, KsJs, KhJh, KcJc, KsTs, KhTh, KcTc, Ks9s, Ks5s, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: QcQd, JhJc, JhJd, JcJd, ThTc, 9s9c, 8s8c, 7s7c, 6s6c, AcQc, AdQd, AcJc, AdJd, AdKs, AdKh, AdKc, KdQd, KdJd, 8h7h, 7h6h, 6h5h
+CO:
+  - Raise 9bb: KK+, QsQh, QsQc, QsQd, QhQc, QhQd, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AsJs, AhJh, AsTs, AhTh, As9s, As8s, As7s, A5s, A4s, As3s, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KsQs, KhQh, KcQc, KsJs, KhJh, KcJc, KsTs, KhTh, KcTc, Ks9s, Ks5s, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: QcQd, JhJc, JhJd, JcJd, ThTc, 9s9c, 8s8c, 7s7c, 6s6c, AcQc, AdQd, AcJc, AdJd, AcTc, AdTd, AdKs, AdKh, AdKc, AsQh, AsQc, KdQd, KdJd, KsTs, QsJs, JsTs, Ts9s, 9s8s, 8h7h, 7h6h, 6h5h
+BTN:
+  - Raise 9bb: KK+, QsQh, QsQc, QsQd, QhQc, QhQd, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AsJs, AhJh, AsTs, As9s, As8s, As7s, As5s, Ah5h, Ac5c, As4s, Ah4h, Ac4c, As3s, Ah3h, Ac3c, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KsQs, KhQh, KsJs, KhJh, KsTs, KhTh, Ks9s, Kh9h, Ks5s, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, QsJs, QhJh, QsTs, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: QcQd, JhJc, JhJd, JcJd, ThTc, 9s9c, 8s8c, 7s7c, 6s6c, AcQc, AdQd, AcJc, AdJd, AcTc, AdTd, AdKs, AdKh, AdKc, AsQh, AsQc, KcQc, KdQd, KcJc, KdJd, KcTc, KdTd, QhJh, QhTh, JsTs, Ts9s, 9s8s, 8h7h, 7h6h, 6h5h
+SB:
+  - Raise 12bb: QQ+, JsJh, JsJc, JsJd, JhJc, JhJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AcQc, AsJs, AhJh, AcJc, AsTs, A5s, A4s, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KJs+, KsTs, KhTh, KcTc, KsQh, KsQc, KsQd, QsJs, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: JcJd, TcTd, 9c9d, AdQd, AdJd, 5d4d
+BB:
+  - Raise 14bb: QQ+, 8s8h, 7s7h, 6s6h, 5s5h, AKs, As7s, Ah7h, As6s, Ah6h, As5s, Ah5h, As4s, Ah4h, As3s, Ah3h, As2s, Ah2h, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, KsQs, KhQh, KsTs, KhTh, Ks9s, Kh9h, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, QsJs, QhJh, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: JJ, TT, 99, 88, 77, 66, 55, 44, 33, 22, AQs, AJs, ATs, A9s, A8s, Ac7c, Ad7d, Ac6c, Ad6d, Ac5c, Ad5d, Ac4c, Ad4d, Ac3c, Ad3d, Ac2c, Ad2d, AdKs, AdKh, AdKc, AsQh, AsQc, AsJh, AsJc, AsJd, AhJs, AhJc, AhJd, KcQc, KdQd, KJs, KcTc, KdTd, Kc9c, Kd9d, KcQs, KcQh, KcQd, KdQs, KdQh, KdQc, QcJc, QdJd, QTs, JTs, T9s, 98s, 87s, 76s, 65s
