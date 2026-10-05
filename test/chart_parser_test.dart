@@ -6,12 +6,53 @@ import 'package:yaml/yaml.dart';
 
 void main() {
   late PositionChart utg;
+  late PositionChart hjVsUtg;
+
+  PositionChart load(String chart, String position) {
+    final path = ChartParser.assetPath(
+      type: '6max',
+      stacks: '100',
+      limit: 'NL100',
+      raise: '3bb',
+      chart: chart,
+    );
+    return ChartParser.parse(loadYaml(File(path).readAsStringSync()), position);
+  }
 
   setUpAll(() {
-    final yamlString = File(
-      'assets/6max_100_nl100_3bb_opr.yaml',
-    ).readAsStringSync();
-    utg = ChartParser.parse(loadYaml(yamlString), 'UTG');
+    utg = load('OPR', 'UTG');
+    hjVsUtg = load('vs_UTG_opr', 'HJ');
+  });
+
+  test('Asset paths follow the chart directory layout', () {
+    String path(String chart) => ChartParser.assetPath(
+      type: '6max',
+      stacks: '100',
+      limit: 'NL100',
+      raise: '3bb',
+      chart: chart,
+    );
+    expect(path('OPR'), 'assets/6max/100bb/OPR/nl100_3bb.yaml');
+    expect(path('vs_UTG_opr'), 'assets/6max/100bb/vs_OPR/UTG/nl100_3bb.yaml');
+  });
+
+  test('The first declared action wins for overlapping ranges', () {
+    expect(hjVsUtg.actionForCombo('7s7h'), 'Raise 9bb');
+    expect(hjVsUtg.actionForCombo('AsAh'), 'Raise 9bb');
+    expect(hjVsUtg.actionForCombo('6s6h'), 'Call 3bb');
+    expect(hjVsUtg.actionForCombo('2s2h'), 'Call 3bb');
+    expect(hjVsUtg.actionForCombo('As2s'), 'Call 3bb');
+    expect(hjVsUtg.actionForCombo('AsJh'), 'Call 3bb');
+    expect(hjVsUtg.actionForCombo('AsTh'), PositionChart.foldLabel);
+  });
+
+  test('A declared fold keeps its combos from later actions', () {
+    final chart = ChartParser.parse(
+      loadYaml('HJ:\n  - Fold: AA\n  - Call 3bb: QQ+'),
+      'HJ',
+    );
+    expect(chart.actionForCombo('AsAh'), PositionChart.foldLabel);
+    expect(chart.actionForCombo('KsKh'), 'Call 3bb');
   });
 
   test('Hands in the raise range are raises', () {

@@ -1,0 +1,13 @@
+config:
+  limit: NL100
+  raise: 3bb
+UTG:
+  - Raise 3bb: 88+, 7s7h, 7s7c, 7s7d, 6s6h, 6s6c, 6s6d, 5s5h, 5s5c, 5s5d, 4s4h, 4s4c, 4s4d, 3s3h, 3s3c, 3s3d, A2s+, ATo+, K9s+, KJo+, QTs+, JTs, Ts9s, 9s8s, 8s7s, 7s6s, 6s5s, 5s4s
+HJ:
+  - Raise 3bb: 77+, 6s6h, 6s6c, 6s6d, 5s5h, 5s5c, 5s5d, 4s4h, 4s4c, 4s4d, 3s3h, 3s3c, 3s3d, 2s2h, 2s2c, 2s2d, A2s+, ATo+, K8s+, KTo+, Q9s+, QJo, JTs, Ts9s, 9s8s, 8s7s, 7s6s, 6s5s, 5s4s
+CO:
+  - Raise 3bb: 55+, 4s4h, 4s4c, 4s4d, 3s3h, 3s3c, 3s3d, 2s2h, 2s2c, 2s2d, A2s+, A8o+, A5o, K4s+, KTo+, Q8s+, QTo+, J8s+, JTo, T9s, 9s8s, 8s7s, 7s6s, 6s5s, 5s4s
+BTN:
+  - Raise 3bb: 22+, A2s+, A2o+, K2s+, K8o+, Q2s+, Q9o+, J7s+, J9o+, T7s+, T9o, 97s+, 87s, 76s, 65s, 54s
+SB:
+  - Raise 3.5bb: 22+, A2s+, A2o+, K2s+, K9o+, Q2s+, Q9o+, J7s+, J9o+, T6s+, T9o, 96s+, 85s+, 75s+, 64s+, 54s

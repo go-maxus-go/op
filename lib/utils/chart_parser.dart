@@ -60,9 +60,32 @@ class PositionChart {
 }
 
 class ChartParser {
+  /// Asset path of a chart, e.g. `assets/6max/100bb/OPR/nl100_3bb.yaml` or
+  /// `assets/6max/100bb/vs_OPR/UTG/nl100_3bb.yaml` for [chart] `vs_UTG_opr`.
+  static String assetPath({
+    required String type,
+    required String stacks,
+    required String limit,
+    required String raise,
+    required String chart,
+  }) {
+    final String chartDir;
+    final lowerChart = chart.toLowerCase();
+    if (lowerChart.startsWith('vs_') && lowerChart.endsWith('_opr')) {
+      chartDir = 'vs_OPR/${chart.split('_')[1].toUpperCase()}';
+    } else {
+      chartDir = chart;
+    }
+    return 'assets/${type.toLowerCase()}/${stacks}bb/$chartDir/'
+        '${limit.toLowerCase()}_${raise.toLowerCase()}.yaml';
+  }
+
+  /// Parses the actions of [position]. When ranges of several actions
+  /// overlap, a combo gets the first declared action.
   static PositionChart parse(dynamic yamlDoc, String position) {
     final comboActions = <String, String>{};
     final uniqueActions = <String>{PositionChart.foldLabel};
+    final claimedCombos = <String>{};
 
     if (yamlDoc is YamlMap && yamlDoc.containsKey(position)) {
       final handsList = yamlDoc[position];
@@ -81,6 +104,7 @@ class ChartParser {
             value.toString(),
             comboActions,
             uniqueActions,
+            claimedCombos,
           );
         }
       }
@@ -97,13 +121,14 @@ class ChartParser {
     String rangeStr,
     Map<String, String> comboActions,
     Set<String> uniqueActions,
+    Set<String> claimedCombos,
   ) {
     uniqueActions.add(actionName);
-    if (actionName.toLowerCase().contains('fold')) {
-      return;
-    }
+    final isFold = actionName.toLowerCase().contains('fold');
     for (final combo in RangeParser.expandRangeToComboSet(rangeStr)) {
-      comboActions[combo] = actionName;
+      if (claimedCombos.add(combo) && !isFold) {
+        comboActions[combo] = actionName;
+      }
     }
   }
 }

@@ -1,0 +1,6 @@
+config:
+  limit: NL100
+  raise: 3bb
+HJ:
+  - Raise 9bb: KK+, QsQh, QsQc, QsQd, QhQc, QhQd, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AsJs, AhJh, AsTs, AhTh, As9s, As8s, As7s, A5s, A4s, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KsQs, KhQh, KcQc, KsJs, KhJh, KcJc, KsTs, KhTh, KcTc, Ks9s, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: A2s+, AJo+, 22+

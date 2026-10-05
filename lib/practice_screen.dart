@@ -7,6 +7,7 @@ import 'chart_screen.dart';
 import 'poker_table_view.dart';
 import 'action_popup.dart';
 import 'card.dart';
+import 'constants.dart';
 import 'deck.dart';
 import 'user_settings.dart';
 
@@ -154,17 +155,20 @@ class _PracticeScreenState extends State<PracticeScreen> {
   }
 
   Future<void> _loadChart() async {
-    final fileName =
-        '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
+    String pathFor(String chart) => ChartParser.assetPath(
+      type: widget.type,
+      stacks: widget.stacks,
+      limit: widget.limit,
+      raise: widget.raise,
+      chart: chart,
+    );
     try {
-      final yamlString = await rootBundle.loadString('assets/$fileName');
+      final yamlString = await rootBundle.loadString(pathFor(widget.chart));
       _yamlDoc = loadYaml(yamlString);
 
       if (_raiserPosition != null) {
-        final raiserFileName =
-            '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_opr.yaml';
         final raiserYamlString = await rootBundle.loadString(
-          'assets/$raiserFileName',
+          pathFor(PokerConstants.chartOPR),
         );
         _raiserYamlDoc = loadYaml(raiserYamlString);
         _parseRaiserChart();

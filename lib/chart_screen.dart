@@ -46,10 +46,15 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 
   Future<void> _loadChart() async {
-    final fileName =
-        '${widget.type.toLowerCase()}_${widget.stacks}_${widget.limit.toLowerCase()}_${widget.raise.toLowerCase()}_${widget.chart.toLowerCase()}.yaml';
+    final path = ChartParser.assetPath(
+      type: widget.type,
+      stacks: widget.stacks,
+      limit: widget.limit,
+      raise: widget.raise,
+      chart: widget.chart,
+    );
     try {
-      final yamlString = await rootBundle.loadString('assets/$fileName');
+      final yamlString = await rootBundle.loadString(path);
       final yamlDoc = loadYaml(yamlString);
       final parsed = ChartParser.parse(yamlDoc, widget.position);
 
