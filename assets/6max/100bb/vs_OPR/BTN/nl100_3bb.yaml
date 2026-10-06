@@ -1,0 +1,13 @@
+config:
+  hero: BTN
+  limit: NL100
+  raise: 3bb
+UTG:
+  - Raise 9bb: KK+, QsQh, QsQc, QsQd, QhQc, QhQd, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 8s8h, 7s7h, 6s6h, AKs, AsQs, AhQh, AsJs, AsTs, As9s, As8s, As7s, As5s, Ah5h, Ac5c, As4s, Ah4h, Ac4c, As3s, Ah3h, Ac3c, AsKh, AsKc, AsKd, AhKs, AhKc, AhKd, AcKs, AcKh, AcKd, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AcQs, AcQh, AcQd, KsQs, KhQh, KsJs, KhJh, KsTs, KhTh, Ks9s, Kh9h, Ks5s, KsQh, KsQc, KsQd, KhQs, KhQc, KhQd, QsJs, QhJh, QsTs, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: QcQd, JsJh, JsJc, JsJd, JhJc, JhJd, ThTc, ThTd, TcTd, 9h9c, 9h9d, 9c9d, 8h8c, 8h8d, 8c8d, 7h7c, 7h7d, 7c7d, 6s6c, 5c5d, 4c4d, 3c3d, AcQc, AdQd, AhJh, AcJc, AdJd, AhTh, AcTc, AdTd, Ad9d, Ad5d, Ad4d, Ad3d, AdKs, AdKc, AdQs, AdQh, AdQc, KhQh, KcQc, KdQd, KcJc, KdJd, KdTd, QhJh, QhTh, JcTc, JdTd, Ts9s, 9s8s, 8h7h, 7h6h, 6h5h, 5d4d
+HJ:
+  - Raise 9bb: QQ+, JsJh, JsJc, JsJd, TsTh, TsTc, TsTd, 9s9h, 9s9c, 9s9d, 8s8h, 8s8c, 8s8d, 7s7h, 7s7c, 6s6h, AKs, AsQs, AhQh, AsJs, AhJh, AsTs, AhTh, As9s, Ah9h, As8s, Ah8h, As7s, Ah7h, As6s, Ah6h, As5s, Ah5h, As4s, Ah4h, As3s, Ah3h, AKo, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AsJh, AsJc, AsJd, KsQs, KhQh, KsJs, KhJh, KsTs, KhTh, Ks9s, Kh9h, KQo, KsJh, KsJc, KsJd, QsJs, QhJh, QsTs, QhTh, JsTs, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: QQ, JhJc, JhJd, JcJd, ThTc, ThTd, TcTd, 9h9c, 9h9d, 9c9d, 8h8c, 8h8d, 8c8d, 7h7c, 7h7d, 7c7d, 6s6h, 5c5d, 4c4d, 3c3d, AcQc, AdQd, AcJc, AdJd, AcTc, AdTd, Ac9c, Ad9d, Ad8d, Ac5c, Ad5d, AcQs, AcQh, AcQd, AdQs, AdQh, AdQc, KcQc, KdQd, KcJc, KdJd, KcTc, KdTd, QcJc, QdJd, QcTc, QdTd, JcTc, JdTd, 8d7d, 7d6d, 6d5d, 5d4d
+CO:
+  - Raise 9bb: JJ+, TsTh, TsTc, TsTd, 9s9h, 9s9c, 9s9d, 8s8h, 8s8c, 8s8d, 7s7h, 7s7c, 6s6h, 5s5h, AQs+, AsJs, AhJh, AsTs, AhTh, As9s, Ah9h, A8s, A7s, A6s, A5s, A4s, A3s, AKo, AsQh, AsQc, AsQd, AhQs, AhQc, AhQd, AJo, KsQs, KhQh, KsJs, KhJh, KsTs, KhTh, K9s, KQo, KsJh, KsJc, KsJd, KhJs, KhJc, KhJd, QsJs, QhJh, QsTs, QhTh, JsTs, JhTh, 8s7s, 7s6s, 6s5s, 5s4s
+  - Call 3bb: ThTc, ThTd, TcTd, 9h9c, 9h9d, 9c9d, 8h8c, 8h8d, 8c8d, 7h7c, 7h7d, 7c7d, 6c6d, 5c5d, 4c4d, 3c3d, AcJc, AdJd, AcTc, AdTd, Ac9c, Ad9d, AcQs, AcQh, AcQd, AdQs, AdQh, AdQc, KcQc, KdQd, KcJc, KdJd, KcTc, KdTd, QcJc, QdJd, QcTc, QdTd, JcTc, JdTd, 8d7d, 7d6d, 6d5d, 5d4d
