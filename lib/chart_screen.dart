@@ -14,6 +14,9 @@ class ChartScreen extends StatefulWidget {
   final String position;
   final String chart;
 
+  /// Villain in the hand. The opener for vs OPR, or the 3-bettor for vs 3bet.
+  final String? villain;
+
   const ChartScreen({
     super.key,
     required this.type,
@@ -22,6 +25,7 @@ class ChartScreen extends StatefulWidget {
     required this.raise,
     required this.position,
     required this.chart,
+    this.villain,
   });
 
   @override
@@ -46,17 +50,26 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 
   Future<void> _loadChart() async {
+    final perHero = ChartParser.isPerHero(widget.chart);
     final path = ChartParser.assetPath(
       type: widget.type,
       stacks: widget.stacks,
       limit: widget.limit,
       raise: widget.raise,
       chart: widget.chart,
+      hero: perHero ? widget.position : null,
     );
     try {
       final yamlString = await rootBundle.loadString(path);
       final yamlDoc = loadYaml(yamlString);
-      final parsed = ChartParser.parse(yamlDoc, widget.position);
+      if (perHero &&
+          (yamlDoc is! YamlMap || !yamlDoc.containsKey(widget.villain))) {
+        throw StateError('Villain ${widget.villain} is not in this chart');
+      }
+      final parsed = ChartParser.parse(
+        yamlDoc,
+        perHero ? widget.villain! : widget.position,
+      );
 
       setState(() {
         _chart = parsed;
@@ -206,7 +219,11 @@ class _ChartScreenState extends State<ChartScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.position} Chart'),
+        title: Text(
+          widget.villain == null
+              ? '${widget.position} Chart'
+              : '${widget.position} vs ${widget.villain}',
+        ),
         centerTitle: true,
       ),
       body: _isLoading

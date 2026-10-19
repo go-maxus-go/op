@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart' hide Card;
 import 'dart:math';
 import 'card.dart';
+import 'constants.dart';
 
 class PokerTableView extends StatelessWidget {
   final String heroPosition;
   final String chartType;
+
+  /// Villain in the hand. The opener for vs OPR, or the 3-bettor for vs 3bet.
+  final String? villainPosition;
+
+  /// Villain's bet in bb, without the unit. For vs 3bet this is the 3-bet size.
+  final String? villainBet;
   final String raise;
   final String limit;
   final bool displayInDollars;
@@ -21,6 +28,8 @@ class PokerTableView extends StatelessWidget {
     super.key,
     required this.heroPosition,
     required this.chartType,
+    this.villainPosition,
+    this.villainBet,
     required this.raise,
     required this.limit,
     required this.displayInDollars,
@@ -34,23 +43,29 @@ class PokerTableView extends StatelessWidget {
     int posIdx = actionOrder.indexOf(pos);
     int heroIdx = actionOrder.indexOf(heroPosition);
 
-    if (chartType == 'OPR') {
+    if (chartType == PokerConstants.chartOPR) {
       return posIdx < heroIdx;
-    } else if (chartType.startsWith('vs_') && chartType.endsWith('_opr')) {
-      String raiserPos = chartType.split('_')[1].toUpperCase();
-      if (pos == raiserPos) return false;
+    } else if (chartType == PokerConstants.chartVsOPR) {
+      if (pos == villainPosition) return false;
       return posIdx < heroIdx;
+    } else if (chartType == PokerConstants.chartVs3bet) {
+      return pos != heroPosition && pos != villainPosition;
     } else {
       return posIdx < heroIdx - 1;
     }
   }
 
   String? _getBetAmount(String pos) {
-    if (chartType.startsWith('vs_') && chartType.endsWith('_opr')) {
-      String raiserPos = chartType.split('_')[1].toUpperCase();
-      if (pos == raiserPos) {
-        return raise.replaceAll('bb', '');
-      }
+    if (chartType == PokerConstants.chartVsOPR && pos == villainPosition) {
+      return raise.replaceAll('bb', '');
+    }
+    if (chartType == PokerConstants.chartVs3bet && pos == heroPosition) {
+      return pos == PokerConstants.positionSB
+          ? '3.5'
+          : raise.replaceAll('bb', '');
+    }
+    if (chartType == PokerConstants.chartVs3bet && pos == villainPosition) {
+      return villainBet;
     }
 
     if (pos == 'SB') return '0.5';

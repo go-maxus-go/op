@@ -1,0 +1,7 @@
+config:
+  hero: BTN
+  limit: NL100
+  raise: 3bb
+BB:
+  - Raise 28bb: AsAh, AsAc, AsAd, AhAc, KK, QQ, JJ, TT, AKs, As9s, As8s, As7s, As6s, As5s, As4s, As3s, AQo+, AsJh, AsJc, AsJd, AhJs, AhJc, AhJd, Ks9s
+  - Call 11bb: AhAd, AcAd, 99, 88, 77, 66, 5h5c, 5h5d, 5c5d, 4h4d, 4c4d, 3h3d, 3c3d, AQs, AJs, ATs, As9s, Ah9h, As8s, Ah8h, Ac7c, Ad7d, Ah5h, Ac5c, Ad5d, Ah4h, Ac4c, Ad4d, AcJs, AcJh, AcJd, AdJs, AdJh, AdJc, KTs+, Kc9c, Kd9d, KcQs, KcQh, KcQd, KdQs, KdQh, KdQc, QTs+, JTs, Jc9c, Jd9d, T9s, 9c8c, 9d8d, 8c7c, 8d7d, 7c6c, 7d6d, 6c5c, 6d5d, 5c4c, 5d4d

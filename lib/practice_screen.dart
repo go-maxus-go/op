@@ -19,6 +19,9 @@ class PracticeScreen extends StatefulWidget {
   final String position;
   final String chart;
 
+  /// Villain in the hand. The opener for vs OPR, or the 3-bettor for vs 3bet.
+  final String? villain;
+
   const PracticeScreen({
     super.key,
     required this.type,
@@ -27,6 +30,7 @@ class PracticeScreen extends StatefulWidget {
     required this.raise,
     required this.position,
     required this.chart,
+    this.villain,
   });
 
   @override
@@ -64,9 +68,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
   int _pfrCount = 0;
 
   YamlMap? _yamlDoc;
-  YamlMap? _raiserYamlDoc;
-  PositionChart? _raiserChart;
-  String? _raiserPosition;
+  final Map<String, YamlMap> _heroDocs = {};
+  YamlMap? _oprDoc;
+  YamlMap? _villainVsOpenDoc;
+  final Map<String, PositionChart> _openCharts = {};
+  final Map<String, PositionChart?> _threeBetCharts = {};
+  PositionChart? _villainChart;
   late String _currentPosition;
   List<String> _positionCycle = [];
   int _positionIndex = 0;
@@ -74,15 +81,16 @@ class _PracticeScreenState extends State<PracticeScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.chart.startsWith('vs_') && widget.chart.endsWith('_opr')) {
-      _raiserPosition = widget.chart.split('_')[1].toUpperCase();
-    }
 
     if (widget.position == 'All') {
-      if (_raiserPosition != null) {
+      if (widget.villain != null) {
         final allPos = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
-        final oppIndex = allPos.indexOf(_raiserPosition!);
-        _positionCycle = allPos.sublist(oppIndex + 1);
+        final villainIndex = allPos.indexOf(widget.villain!);
+        // Vs 3bet: hero opened, so cycle seats before the 3-bettor.
+        // Vs OPR: hero faces an open, so cycle seats after the opener.
+        _positionCycle = ChartParser.isVs3bet(widget.chart)
+            ? allPos.sublist(0, villainIndex)
+            : allPos.sublist(villainIndex + 1);
       } else {
         _positionCycle = [
           if (widget.chart != 'OPR') 'BB',
@@ -101,14 +109,42 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _loadChart();
   }
 
-  bool _simulateRaiser(List<Card> cards) {
-    if (_raiserPosition == null || _raiserChart == null) return true;
-    final action = _raiserChart!.actionForCards(cards[0], cards[1]);
+  bool _villainOpens(List<Card> cards) {
+    if (widget.villain == null || _villainChart == null) return true;
+    final action = _villainChart!.actionForCards(cards[0], cards[1]);
     return !action.toLowerCase().contains('fold');
   }
 
+  bool _heroOpened(List<Card> cards) {
+    if (_oprDoc == null) return true;
+    final chart = _openCharts.putIfAbsent(
+      _currentPosition,
+      () => ChartParser.parse(_oprDoc, _currentPosition),
+    );
+    if (chart.comboActions.isEmpty) return true;
+    final action = chart.actionForCards(cards[0], cards[1]);
+    return !action.toLowerCase().contains('fold');
+  }
+
+  /// True when [cards] 3-bet the hero's open. A missing chart, or one with no
+  /// raise, does not reject the hand.
+  bool _villainThreeBet(List<Card> cards) {
+    final chart = _threeBetCharts.putIfAbsent(_currentPosition, () {
+      final doc = _villainVsOpenDoc;
+      if (doc == null || !doc.containsKey(_currentPosition)) return null;
+      final parsed = ChartParser.parse(doc, _currentPosition);
+      final hasRaise = parsed.comboActions.values.any(
+        (action) => action.toLowerCase().contains('raise'),
+      );
+      return hasRaise ? parsed : null;
+    });
+    if (chart == null) return true;
+    final action = chart.actionForCards(cards[0], cards[1]);
+    return action.toLowerCase().contains('raise');
+  }
+
   void _dealHand() {
-    if (widget.position == 'All' && _yamlDoc != null && _card1 != null) {
+    if (widget.position == 'All' && _card1 != null && _positionCycle.length > 1) {
       _positionIndex = (_positionIndex + 1) % _positionCycle.length;
       _currentPosition = _positionCycle[_positionIndex];
       _parseChartForPosition();
@@ -122,9 +158,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
         _playerHands[pos] = [_deck!.nextCard(), _deck!.nextCard()];
       }
 
-      if (_raiserPosition != null) {
-        final raiserCards = _playerHands[_raiserPosition!];
-        if (raiserCards != null && !_simulateRaiser(raiserCards)) {
+      if (ChartParser.isVs3bet(widget.chart)) {
+        final heroCards = _playerHands[_currentPosition];
+        if (heroCards != null && !_heroOpened(heroCards)) continue;
+        final villainCards = _playerHands[widget.villain!];
+        if (villainCards != null && !_villainThreeBet(villainCards)) continue;
+      } else if (widget.villain != null) {
+        final villainCards = _playerHands[widget.villain!];
+        if (villainCards != null && !_villainOpens(villainCards)) {
           continue;
         }
       }
@@ -155,23 +196,63 @@ class _PracticeScreenState extends State<PracticeScreen> {
   }
 
   Future<void> _loadChart() async {
-    String pathFor(String chart) => ChartParser.assetPath(
+    String pathFor(String chart, {String? hero}) => ChartParser.assetPath(
       type: widget.type,
       stacks: widget.stacks,
       limit: widget.limit,
       raise: widget.raise,
       chart: chart,
+      hero: hero,
     );
     try {
-      final yamlString = await rootBundle.loadString(pathFor(widget.chart));
-      _yamlDoc = loadYaml(yamlString);
-
-      if (_raiserPosition != null) {
-        final raiserYamlString = await rootBundle.loadString(
+      if (ChartParser.isPerHero(widget.chart)) {
+        final heroes = widget.position == 'All'
+            ? List<String>.from(_positionCycle)
+            : [widget.position];
+        final loaded = <String>[];
+        for (final hero in heroes) {
+          try {
+            final yamlString = await rootBundle.loadString(
+              pathFor(widget.chart, hero: hero),
+            );
+            final doc = loadYaml(yamlString);
+            if (doc is YamlMap && doc.containsKey(widget.villain)) {
+              _heroDocs[hero] = doc;
+              loaded.add(hero);
+            }
+          } catch (e) {
+            debugPrint('Missing ${widget.chart} chart for $hero: $e');
+          }
+        }
+        if (loaded.isEmpty) {
+          throw StateError('No ${widget.chart} chart for ${widget.villain}');
+        }
+        if (widget.position == 'All') {
+          _positionCycle = loaded;
+          _positionIndex = 0;
+          _currentPosition = _positionCycle.first;
+        }
+        final openYaml = await rootBundle.loadString(
           pathFor(PokerConstants.chartOPR),
         );
-        _raiserYamlDoc = loadYaml(raiserYamlString);
-        _parseRaiserChart();
+        final openDoc = loadYaml(openYaml);
+        if (ChartParser.isVs3bet(widget.chart)) {
+          if (openDoc is YamlMap) _oprDoc = openDoc;
+          try {
+            final villainYaml = await rootBundle.loadString(
+              pathFor(PokerConstants.chartVsOPR, hero: widget.villain),
+            );
+            final villainDoc = loadYaml(villainYaml);
+            if (villainDoc is YamlMap) _villainVsOpenDoc = villainDoc;
+          } catch (e) {
+            debugPrint('Missing vs OPR chart for ${widget.villain}: $e');
+          }
+        } else if (openDoc is YamlMap) {
+          _villainChart = ChartParser.parse(openDoc, widget.villain!);
+        }
+      } else {
+        final yamlString = await rootBundle.loadString(pathFor(widget.chart));
+        _yamlDoc = loadYaml(yamlString);
       }
 
       _parseChartForPosition();
@@ -191,12 +272,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
   }
 
-  void _parseRaiserChart() {
-    if (_raiserYamlDoc == null || _raiserPosition == null) return;
-    _raiserChart = ChartParser.parse(_raiserYamlDoc, _raiserPosition!);
-  }
-
   void _parseChartForPosition() {
+    if (ChartParser.isPerHero(widget.chart)) {
+      _chart = ChartParser.parse(_heroDocs[_currentPosition], widget.villain!);
+      return;
+    }
     if (_yamlDoc == null) return;
     _chart = ChartParser.parse(_yamlDoc, _currentPosition);
   }
@@ -329,7 +409,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Practice: $_currentPosition'),
+            Text(
+              widget.villain == null
+                  ? 'Practice: $_currentPosition'
+                  : 'Practice: $_currentPosition vs ${widget.villain}',
+            ),
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.bar_chart, size: 24),
@@ -345,6 +429,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       raise: widget.raise,
                       position: _currentPosition,
                       chart: widget.chart,
+                      villain: widget.villain,
                     ),
                   ),
                 );
@@ -390,6 +475,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       child: PokerTableView(
                         heroPosition: _currentPosition,
                         chartType: widget.chart,
+                        villainPosition: widget.villain,
+                        villainBet: ChartParser.isVs3bet(widget.chart)
+                            ? _chart.callAmount
+                            : null,
                         raise: widget.raise,
                         limit: widget.limit,
                         displayInDollars: _displayInDollars,

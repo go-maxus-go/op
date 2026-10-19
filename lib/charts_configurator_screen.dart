@@ -15,15 +15,22 @@ class ChartsConfiguratorScreen extends StatefulWidget {
 
 class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
   static const _modes = ['Chart', 'Practice'];
-  static const _limits = [PokerConstants.limitNL100, PokerConstants.limitNL200];
   static const _charts = [
     PokerConstants.chartOPR,
     PokerConstants.chartVsOPR,
-    PokerConstants.chartCall,
-    PokerConstants.chart3bet,
-    PokerConstants.chart4bet,
+    PokerConstants.chartVs3bet,
   ];
-  static const _raiserPositions = [
+  static const _actionOrder = [
+    PokerConstants.positionUTG,
+    PokerConstants.positionHJ,
+    PokerConstants.positionCO,
+    PokerConstants.positionBTN,
+    PokerConstants.positionSB,
+    PokerConstants.positionBB,
+  ];
+
+  /// Positions that can open. The big blind acts last and does not open.
+  static const _openPositions = [
     PokerConstants.positionUTG,
     PokerConstants.positionHJ,
     PokerConstants.positionCO,
@@ -34,7 +41,6 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
   final ConfiguratorSettings _settings = UserSettings.instance.configurator;
 
   String _selectedMode = 'Practice';
-  String _selectedLimit = PokerConstants.limitNL100;
   String _selectedPosition = 'All';
   String _selectedOpponentPosition = PokerConstants.positionUTG;
   String _selectedChart = PokerConstants.chartOPR;
@@ -44,42 +50,44 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
     super.initState();
     // Saved values may no longer be offered, so fall back to defaults.
     if (_modes.contains(_settings.mode)) _selectedMode = _settings.mode;
-    if (_limits.contains(_settings.limit)) _selectedLimit = _settings.limit;
     if (_charts.contains(_settings.chart)) _selectedChart = _settings.chart;
-    if (_raiserPositions.contains(_settings.opponentPosition)) {
-      _selectedOpponentPosition = _settings.opponentPosition;
-    }
-    final positions = _positionOptions();
-    _selectedPosition = positions.contains(_settings.position)
-        ? _settings.position
-        : positions.first;
+    _selectedOpponentPosition = _settings.opponentPosition;
+    _selectedPosition = _settings.position;
+    _selectedPosition = _coerceHero(_selectedPosition);
+    _selectedOpponentPosition = _coerceVillain(_selectedOpponentPosition);
   }
 
   /// Applies a selection change and saves the resulting configuration.
   void _update(VoidCallback change) {
-    setState(change);
+    setState(() {
+      change();
+      _selectedPosition = _coerceHero(_selectedPosition);
+      _selectedOpponentPosition = _coerceVillain(_selectedOpponentPosition);
+    });
     _settings
       ..mode = _selectedMode
-      ..limit = _selectedLimit
       ..chart = _selectedChart
       ..opponentPosition = _selectedOpponentPosition
       ..position = _selectedPosition;
   }
 
-  List<String> _positionOptions() {
-    final allPos = [
-      PokerConstants.positionUTG,
-      PokerConstants.positionHJ,
-      PokerConstants.positionCO,
-      PokerConstants.positionBTN,
-      PokerConstants.positionSB,
-      PokerConstants.positionBB,
-    ];
+  bool get _showsVillain =>
+      _selectedChart == PokerConstants.chartVsOPR ||
+      _selectedChart == PokerConstants.chartVs3bet;
+
+  /// Hero seats for the current chart.
+  ///
+  /// Vs OPR starts at HJ, since UTG acts first and cannot face an open.
+  /// Vs 3bet stops at SB, since the big blind has nobody left to 3-bet them.
+  List<String> _heroOptions() {
     if (_selectedChart == PokerConstants.chartVsOPR) {
-      final oppIndex = allPos.indexOf(_selectedOpponentPosition);
       return [
         if (_selectedMode == 'Practice') 'All',
-        ...allPos.sublist(oppIndex + 1),
+        PokerConstants.positionHJ,
+        PokerConstants.positionCO,
+        PokerConstants.positionBTN,
+        PokerConstants.positionSB,
+        PokerConstants.positionBB,
       ];
     }
     return [
@@ -89,9 +97,39 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
       PokerConstants.positionCO,
       PokerConstants.positionBTN,
       PokerConstants.positionSB,
-      if (_selectedChart != PokerConstants.chartOPR)
-        PokerConstants.positionBB,
     ];
+  }
+
+  /// Villains for the selected hero.
+  ///
+  /// Vs OPR: openers who act before the hero. Vs 3bet: seats who act after
+  /// the hero's open, including the big blind.
+  List<String> _villainOptions() {
+    final heroIndex = _actionOrder.indexOf(_selectedPosition);
+    if (_selectedChart == PokerConstants.chartVs3bet) {
+      if (_selectedPosition == 'All') {
+        return _actionOrder.sublist(1);
+      }
+      return _actionOrder.sublist(heroIndex + 1);
+    }
+    if (_selectedPosition == 'All') return _openPositions;
+    return [
+      for (final position in _openPositions)
+        if (_actionOrder.indexOf(position) < heroIndex) position,
+    ];
+  }
+
+  String _coerceHero(String position) {
+    final options = _heroOptions();
+    if (options.contains(position)) return position;
+    return options.firstWhere((option) => option != 'All');
+  }
+
+  String _coerceVillain(String villain) {
+    if (!_showsVillain) return villain;
+    final options = _villainOptions();
+    if (options.contains(villain)) return villain;
+    return options.first;
   }
 
   Widget _buildSection(
@@ -151,8 +189,6 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                   _selectedMode = val;
                   if (_selectedMode == 'Practice') {
                     _selectedPosition = 'All';
-                  } else if (_selectedMode == 'Chart' && _selectedPosition == 'All') {
-                    _selectedPosition = PokerConstants.positionUTG;
                   }
                 });
               },
@@ -164,82 +200,24 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
               null,
             ),
             _buildSection(
-              'Limit',
-              _limits,
-              _selectedLimit,
-              (val) => _update(() => _selectedLimit = val),
-            ),
-            _buildSection(
-              'Stacks',
-              [PokerConstants.stacks100],
-              PokerConstants.stacks100,
-              null,
-            ),
-            _buildSection(
-              'Raise',
-              [PokerConstants.raise3bb],
-              PokerConstants.raise3bb,
-              null,
-            ),
-            _buildSection(
               'Charts',
               _charts,
               _selectedChart,
-              (val) {
-                _update(() {
-                  _selectedChart = val;
-                  if (_selectedChart == PokerConstants.chartOPR &&
-                      _selectedPosition == PokerConstants.positionBB) {
-                    _selectedPosition = PokerConstants.positionSB;
-                  }
-                  if (_selectedChart == PokerConstants.chartVsOPR) {
-                    final allPos = [
-                      PokerConstants.positionUTG,
-                      PokerConstants.positionHJ,
-                      PokerConstants.positionCO,
-                      PokerConstants.positionBTN,
-                      PokerConstants.positionSB,
-                      PokerConstants.positionBB,
-                    ];
-                    final oppIndex = allPos.indexOf(_selectedOpponentPosition);
-                    final heroPosIndex = allPos.indexOf(_selectedPosition);
-                    if (_selectedPosition != 'All' && heroPosIndex <= oppIndex) {
-                      _selectedPosition = allPos[oppIndex + 1];
-                    }
-                  }
-                });
-              },
+              (val) => _update(() => _selectedChart = val),
             ),
-            if (_selectedChart == PokerConstants.chartVsOPR)
-              _buildSection(
-                'Raiser',
-                _raiserPositions,
-                _selectedOpponentPosition,
-                (val) {
-                  _update(() {
-                    _selectedOpponentPosition = val;
-                    final allPos = [
-                      PokerConstants.positionUTG,
-                      PokerConstants.positionHJ,
-                      PokerConstants.positionCO,
-                      PokerConstants.positionBTN,
-                      PokerConstants.positionSB,
-                      PokerConstants.positionBB,
-                    ];
-                    final oppIndex = allPos.indexOf(_selectedOpponentPosition);
-                    final heroPosIndex = allPos.indexOf(_selectedPosition);
-                    if (_selectedPosition != 'All' && heroPosIndex <= oppIndex) {
-                      _selectedPosition = allPos[oppIndex + 1];
-                    }
-                  });
-                },
-              ),
             _buildSection(
-              'Position',
-              _positionOptions(),
+              'Hero',
+              _heroOptions(),
               _selectedPosition,
               (val) => _update(() => _selectedPosition = val),
             ),
+            if (_showsVillain)
+              _buildSection(
+                'Villain',
+                _villainOptions(),
+                _selectedOpponentPosition,
+                (val) => _update(() => _selectedOpponentPosition = val),
+              ),
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -247,21 +225,20 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                 textStyle: const TextStyle(fontSize: 20),
               ),
               onPressed: () {
-                final chartToPass = _selectedChart == PokerConstants.chartVsOPR
-                    ? 'vs_${_selectedOpponentPosition}_opr'
-                    : _selectedChart;
-                    
+                final villain = _showsVillain ? _selectedOpponentPosition : null;
+
                 if (_selectedMode == 'Practice') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => PracticeScreen(
                         type: PokerConstants.type6max,
-                        limit: _selectedLimit,
+                        limit: PokerConstants.limitNL100,
                         stacks: PokerConstants.stacks100,
                         raise: PokerConstants.raise3bb,
                         position: _selectedPosition,
-                        chart: chartToPass,
+                        chart: _selectedChart,
+                        villain: villain,
                       ),
                     ),
                   );
@@ -271,11 +248,12 @@ class _ChartsConfiguratorScreenState extends State<ChartsConfiguratorScreen> {
                     MaterialPageRoute(
                       builder: (context) => ChartScreen(
                         type: PokerConstants.type6max,
-                        limit: _selectedLimit,
+                        limit: PokerConstants.limitNL100,
                         stacks: PokerConstants.stacks100,
                         raise: PokerConstants.raise3bb,
                         position: _selectedPosition,
-                        chart: chartToPass,
+                        chart: _selectedChart,
+                        villain: villain,
                       ),
                     ),
                   );

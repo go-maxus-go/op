@@ -25,6 +25,16 @@ class PositionChart {
     );
   }
 
+  /// Amount of the bet this chart calls, such as `11` from `Call 11bb`.
+  String? get callAmount {
+    final size = RegExp(r'call\s+(\d+(?:\.\d+)?)\s*bb', caseSensitive: false);
+    for (final action in uniqueActions) {
+      final match = size.firstMatch(action);
+      if (match != null) return match.group(1);
+    }
+    return null;
+  }
+
   Map<String, int> actionCountsForHand(String gridHand) {
     final counts = <String, int>{};
     for (final combo in RangeParser.expandRange(gridHand)) {
@@ -60,19 +70,40 @@ class PositionChart {
 }
 
 class ChartParser {
-  /// Asset path of a chart, e.g. `assets/6max/100bb/OPR/nl100_3bb.yaml` or
-  /// `assets/6max/100bb/vs_OPR/UTG/nl100_3bb.yaml` for [chart] `vs_UTG_opr`.
+  static String _chartKey(String chart) =>
+      chart.toLowerCase().replaceAll(' ', '_');
+
+  /// True for the vs open-raise chart (`vs OPR`).
+  ///
+  /// The file is stored per hero, and each villain who opened is a position key.
+  static bool isVsOpr(String chart) => _chartKey(chart) == 'vs_opr';
+
+  /// True for the vs 3-bet chart (`vs 3bet`).
+  ///
+  /// The file is stored per hero, and each villain who 3-bet is a position key.
+  static bool isVs3bet(String chart) => _chartKey(chart) == 'vs_3bet';
+
+  /// Charts stored as one file per hero, with villains as the position keys.
+  static bool isPerHero(String chart) => isVsOpr(chart) || isVs3bet(chart);
+
+  /// Asset path of a chart, e.g. `assets/6max/100bb/OPR/nl100_3bb.yaml`,
+  /// `assets/6max/100bb/vs_OPR/BTN/nl100_3bb.yaml` for hero BTN facing an open,
+  /// or `assets/6max/100bb/vs_3bet/BTN/nl100_3bb.yaml` facing a 3-bet.
+  ///
+  /// [hero] selects the file for a vs OPR or vs 3bet chart.
   static String assetPath({
     required String type,
     required String stacks,
     required String limit,
     required String raise,
     required String chart,
+    String? hero,
   }) {
     final String chartDir;
-    final lowerChart = chart.toLowerCase();
-    if (lowerChart.startsWith('vs_') && lowerChart.endsWith('_opr')) {
-      chartDir = 'vs_OPR/${chart.split('_')[1].toUpperCase()}';
+    if (isVsOpr(chart)) {
+      chartDir = 'vs_OPR/${hero!.toUpperCase()}';
+    } else if (isVs3bet(chart)) {
+      chartDir = 'vs_3bet/${hero!.toUpperCase()}';
     } else {
       chartDir = chart;
     }

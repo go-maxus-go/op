@@ -33,7 +33,28 @@ HJ:
       chart: chart,
     );
     expect(path('OPR'), 'assets/6max/100bb/OPR/nl100_3bb.yaml');
-    expect(path('vs_UTG_opr'), 'assets/6max/100bb/vs_OPR/UTG/nl100_3bb.yaml');
+    expect(
+      ChartParser.assetPath(
+        type: '6max',
+        stacks: '100',
+        limit: 'NL100',
+        raise: '3bb',
+        chart: 'vs OPR',
+        hero: 'BTN',
+      ),
+      'assets/6max/100bb/vs_OPR/BTN/nl100_3bb.yaml',
+    );
+    expect(
+      ChartParser.assetPath(
+        type: '6max',
+        stacks: '100',
+        limit: 'NL100',
+        raise: '3bb',
+        chart: 'vs 3bet',
+        hero: 'BTN',
+      ),
+      'assets/6max/100bb/vs_3bet/BTN/nl100_3bb.yaml',
+    );
   });
 
   test('Every chart asset parses', () {
@@ -42,13 +63,22 @@ HJ:
         .whereType<File>()
         .where((f) => f.path.endsWith('.yaml'));
     expect(files, isNotEmpty);
+    var parsed = 0;
     for (final file in files) {
-      final doc = loadYaml(file.readAsStringSync()) as YamlMap;
-      for (final position in doc.keys.where((k) => k != 'config')) {
-        final chart = ChartParser.parse(doc, position as String);
-        expect(chart.comboActions, isNotEmpty, reason: file.path);
+      final loaded = loadYaml(file.readAsStringSync());
+      if (loaded is! YamlMap) continue;
+      for (final position in loaded.keys.where((k) => k != 'config')) {
+        final chart = ChartParser.parse(loaded, position as String);
+        expect(chart.comboActions, isNotEmpty, reason: '${file.path} $position');
+        parsed++;
       }
     }
+    expect(parsed, greaterThan(0));
+  });
+
+  test('A call action records the bet being faced', () {
+    expect(hj.callAmount, '3');
+    expect(utg.callAmount, isNull);
   });
 
   test('The first declared action wins for overlapping ranges', () {

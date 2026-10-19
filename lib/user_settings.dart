@@ -177,7 +177,6 @@ class ConfiguratorSettings extends _SettingsSection {
   ConfiguratorSettings._(SharedPreferences? prefs)
     : super(prefs, 'configurator') {
     _mode = _getString('mode', 'Practice');
-    _limit = _getString('limit', PokerConstants.limitNL100);
     _position = _getString('position', 'All');
     _opponentPosition = _getString(
       'opponentPosition',
@@ -187,7 +186,6 @@ class ConfiguratorSettings extends _SettingsSection {
   }
 
   late String _mode;
-  late String _limit;
   late String _position;
   late String _opponentPosition;
   late String _chart;
@@ -199,12 +197,6 @@ class ConfiguratorSettings extends _SettingsSection {
     _setString('mode', value);
   }
 
-  String get limit => _limit;
-  set limit(String value) {
-    _limit = value;
-    _setString('limit', value);
-  }
-
   /// Hero position, or 'All' to cycle through positions in practice.
   String get position => _position;
   set position(String value) {
@@ -212,7 +204,7 @@ class ConfiguratorSettings extends _SettingsSection {
     _setString('position', value);
   }
 
-  /// Raiser position for the vs OPR chart.
+  /// Villain position for the vs OPR and vs 3bet charts.
   String get opponentPosition => _opponentPosition;
   set opponentPosition(String value) {
     _opponentPosition = value;

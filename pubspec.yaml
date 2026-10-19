@@ -61,7 +61,9 @@ flutter:
 
   assets:
     - assets/6max/100bb/OPR/
-    - assets/6max/100bb/vs_OPR/UTG/
+    - assets/6max/100bb/vs_OPR/BB/
+    - assets/6max/100bb/vs_OPR/BTN/
+    - assets/6max/100bb/vs_3bet/BTN/
     - assets/charts/
     - assets/deck/
 
